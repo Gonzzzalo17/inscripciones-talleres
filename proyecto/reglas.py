@@ -36,3 +36,23 @@ def registrar_inscripcion(taller: Taller, ci_participante: str) -> dict:
             "estado": "EN_ESPERA",
             "mensaje": "Cupo lleno. El participante ingresó a la lista de espera."
         }
+# Ejemplo de prueba ejecutable
+if __name__ == "__main__":
+    taller = crear_taller(nombre="Robótica Avanzada", cupo_maximo=2, categoria="Tecnología")
+    print(f"Taller creado: {taller.nombreTaller} (ID: {taller.id_taller})")
+    print(f"Cupo máximo: {taller.cupo_maximo}\n")
+
+    # Inscripciones válidas
+    print(registrar_inscripcion(taller, ci_participante="1234567"))
+    print(registrar_inscripcion(taller, ci_participante="8901234"))
+
+    # Intento de duplicado (mismo CI)
+    try:
+        registrar_inscripcion(taller, ci_participante="1234567")
+    except ValueError as e:
+        print(f"Error esperado por duplicado: {e}")
+
+    # Cupo lleno -> Pasa a lista de espera
+    print(registrar_inscripcion(taller, ci_participante="5554433"))
+
+    print(f"\nInscritos confirmados en memoria: {len(taller.inscritos)}")

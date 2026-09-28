@@ -56,4 +56,16 @@ def test_rechaza_crear_taller_con_cupo_cero():
     # Rechazo: un taller sin cupos no tiene sentido.
     with pytest.raises(ValueError):
         crear_taller("Taller vacío", 0, "General")
+def test_rechaza_crear_taller_con_cupo_negativo():
+    # Rechazo: un taller con cupo negativo no debe ser permitido.
+    with pytest.raises(ValueError):
+        crear_taller("Taller Inválido", -5, "General")
 
+def test_crea_taller_con_id_unico_automatico():
+    # Estructura: al instanciar dos talleres, sus IDs deben ser distintos y tener prefijo TAL-
+    taller_a = crear_taller("Programación I", 5, "Tecnología")
+    taller_b = crear_taller("Robótica I", 5, "Tecnología")
+
+    assert taller_a.id_taller.startswith("TAL-")
+    assert taller_b.id_taller.startswith("TAL-")
+    assert taller_a.id_taller != taller_b.id_taller
