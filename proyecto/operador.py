@@ -11,7 +11,6 @@ class Operador:
 
     @staticmethod
     def agregar_a_lista_de_espera(participante, taller):
-        """Asigna un lugar en la lista de espera si hay espacio (20% del cupo total)."""
         cupo_espera = int(taller.cupo_maximo * porcentaje_lista_espera)
         en_espera = Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').count()
         if en_espera < cupo_espera:
@@ -25,7 +24,6 @@ class Operador:
 
     @staticmethod
     def promover_siguiente_en_espera(taller):
-        """Promueve al primer participante en espera a CONFIRMADO y reordena las posiciones."""
         primero = Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').order_by('posicion_espera').first()
         if primero:
             primero.estado = 'CONFIRMADO'
@@ -75,3 +73,30 @@ class Operador:
             cls.promover_siguiente_en_espera(taller)
 
         return inscripcion
+
+    @staticmethod
+    def verificar_que_el_taller_no_haya_empezado(taller):
+        if timezone.now() >= taller.fecha_inicio:
+            raise ValidationError("El taller ya empezó.")
+
+    @staticmethod
+    def verificar_que_el_usuario_no_este_inscrito(participante, taller):
+        ya_inscrito = Inscripcion.objects.filter(
+            participante=participante,
+            taller=taller,
+            estado__in=['CONFIRMADO', 'EN_ESPERA']
+        ).exists()
+        if ya_inscrito:
+            raise ValidationError(f"El participante ya se encuentra registrado en el taller {taller.codigo}.")
+
+    @staticmethod
+    def verificar_que_no_tenga_cruce_de_horario(participante, taller):
+        hay_cruce = Inscripcion.objects.filter(
+            participante=participante,
+            estado='CONFIRMADO',
+            taller__fecha_inicio__lt=taller.fecha_fin,
+            taller__fecha_fin__gt=taller.fecha_inicio
+        ).exists()
+        if hay_cruce:
+            raise ValidationError("El participante ya tiene otro taller en este horario.")
+
