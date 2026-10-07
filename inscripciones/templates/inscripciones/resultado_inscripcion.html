@@ -1,0 +1,36 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Resultado de la solicitud{% endblock %}
+
+{% block contenido %}
+<h1>Resultado de la solicitud</h1>
+
+{% if inscripcion.estado == "CONFIRMADO" %}
+    <div class="aviso confirmado">
+        <strong>Inscripción confirmada.</strong>
+        {{ inscripcion.participante.get_full_name|default:inscripcion.participante.username }}
+        tiene una plaza en el taller {{ inscripcion.taller.codigo }}.
+    </div>
+{% elif inscripcion.estado == "EN_ESPERA" %}
+    <div class="aviso espera">
+        <strong>En lista de espera.</strong>
+        El taller {{ inscripcion.taller.codigo }} está lleno.
+        {{ inscripcion.participante.get_full_name|default:inscripcion.participante.username }}
+        quedó en la posición {{ inscripcion.posicion_espera }} de la lista de espera.
+    </div>
+{% endif %}
+
+<div class="caja">
+    <dl class="datos">
+        <dt>Taller</dt>
+        <dd>{{ inscripcion.taller.codigo }}</dd>
+        <dt>Estado</dt>
+        <dd>{{ inscripcion.get_estado_display }}</dd>
+        <dt>Fecha de solicitud</dt>
+        <dd>{{ inscripcion.fecha_solicitud|date:"d/m/Y H:i" }}</dd>
+    </dl>
+</div>
+
+<a class="boton" href="{% url 'lista_talleres' %}">Volver a talleres</a>
+<a class="boton secundario" href="{% url 'solicitar_inscripcion' inscripcion.taller.pk %}">Inscribir a otro participante</a>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Inscribirse en {{ taller.codigo }}{% endblock %}
+
+{% block contenido %}
+<h1>Solicitar inscripción a {{ taller.codigo }}</h1>
+
+{% if error %}
+    {# Rechazo: E1 (ya empezó), E3 (choque de horario), E5 (todo lleno) o duplicado #}
+    <div class="aviso rechazo">
+        <strong>Solicitud rechazada.</strong> {{ error }}
+    </div>
+{% endif %}
+
+<div class="caja">
+    <dl class="datos">
+        <dt>Inicio</dt>
+        <dd>{{ taller.fecha_inicio|date:"d/m/Y H:i" }}</dd>
+        <dt>Fin</dt>
+        <dd>{{ taller.fecha_fin|date:"d/m/Y H:i" }}</dd>
+        <dt>Plazas ocupadas</dt>
+        <dd>{{ ocupadas }} de {{ taller.cupo_maximo }}</dd>
+        <dt>Lista de espera</dt>
+        <dd>{{ en_espera }} de {{ limite_espera }}</dd>
+    </dl>
+</div>
+
+<div class="caja">
+    <form method="post">
+        {% csrf_token %}
+        <div class="campo">
+            <label for="participante">Participante</label>
+            <select id="participante" name="participante" required>
+                <option value="">Elige un participante</option>
+                {% for p in participantes %}
+                    <option value="{{ p.pk }}" {% if p.pk|stringformat:"s" == participante_seleccionado %}selected{% endif %}>
+                        {{ p.get_full_name|default:p.username }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {% if ocupadas < taller.cupo_maximo %}
+            <p class="ayuda">Hay plazas libres: si la solicitud es válida, la inscripción queda confirmada.</p>
+        {% else %}
+            <p class="ayuda">El taller está lleno: si hay lugar en la lista de espera, quedarás en la última posición.</p>
+        {% endif %}
+
+        <button type="submit" class="boton">Solicitar inscripción</button>
+        <a class="boton secundario" href="{% url 'lista_talleres' %}">Volver a talleres</a>
+    </form>
+</div>
+{% endblock %}
