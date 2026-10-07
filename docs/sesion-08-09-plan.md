@@ -55,16 +55,12 @@ Fuera de este incremento:
 - Existe alguien que quiere inscribirse 
 - Ya tenemos talleres 
 ## 3. Tareas
-## 3. Tareas
-
 | Tarea | Trabajo y evidencia de terminación | Esfuerzo | Duración | Predecesoras | Responsable |
 |---|---|---:|---:|---|---|
 | A | Revisar el código existente contra `TAL-CU-01` y acordar los casos concretos de prueba. Evidencia: lista de casos con IDs, coherente con la sesión 6. | 3 h-p | 1 día | Ninguna | Andrea |
 | B | Crear el modelo `Taller` (código, cupo máximo, inicio, fin) y talleres de demostración. Evidencia: talleres creados y usados por el flujo. | 2 h-p | 2 días | A | Gonzalo |
 | C | Escribir las pruebas de los casos acordados, incluida la conservación de datos en cada rechazo. Evidencia: pruebas escritas con las expectativas de los requisitos. | 6 h-p | 3 días | A | Santiago |
 | D | Integrar `Taller` y pruebas, ejecutarlas, corregir fallos del código existente y documentar cómo demostrar el flujo. Evidencia: versión comprobada e instrucciones. | 4 h-p | 2 días | B y C | Andrea y Santiago |
-
-Esfuerzo total: **15 h-p**.
 
 ## 4. Red, tiempos y ruta crítica
 
