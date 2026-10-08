@@ -1,8 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-porcentaje_lista_espera = 0.20
-horas_limite_cancelacion = 3
 
 # 1. Clase Base de Usuario (Hereda de AbstractUser de Django)
 class Usuario(AbstractUser):
@@ -52,16 +50,11 @@ class Instructor(models.Model):
         return f"Instructor: {self.usuario.username}"
 
 
-# 3. Modelos de Inscripción e Historial (Andrea)
-class Taller(models.Model):
-    codigo = models.CharField(max_length=20, unique=True)
-    nombre = models.CharField(max_length=100)
-    cupo_maximo = models.PositiveIntegerField(default=30)
-    fecha_inicio = models.DateTimeField()
-    fecha_fin = models.DateTimeField()
+# 3. Configuraciones y Modelos de Inscripción e Historial (Andrea)
+porcentaje_lista_espera = 0.20
+horas_limite_cancelacion = 3
 
-    def __str__(self):
-        return self.nombre
+
 class Inscripcion(models.Model):
     ESTADOS = [
         ('CONFIRMADO', 'Confirmado'),
