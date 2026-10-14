@@ -1,84 +1,117 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser
-
-
-# 1. Clase Base de Usuario (Hereda de AbstractUser de Django)
-class Usuario(AbstractUser):
-    class Rol(models.TextChoices):
-        COORDINADOR = 'COORDINADOR', 'Coordinador'
-        OPERADOR = 'OPERADOR', 'Operador'
-        PARTICIPANTE = 'PARTICIPANTE', 'Participante'
-        INSTRUCTOR = 'INSTRUCTOR', 'Instructor del Taller'
-
-    rol = models.CharField(
-        max_length=20,
-        choices=Rol.choices,
-        default=Rol.PARTICIPANTE
-    )
-    codigo = models.CharField(max_length=20, unique=True, null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.username} ({self.get_rol_display()})"
-
-
-# 2. Clases Hijas / Perfiles por Rol
-class Coordinador(models.Model):
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, primary_key=True)
-
-    def __str__(self):
-        return f"Coordinador: {self.usuario.username}"
-
-
-class Operador(models.Model):
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, primary_key=True)
-
-    def __str__(self):
-        return f"Operador: {self.usuario.username}"
-
-
-class Participante(models.Model):
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, primary_key=True)
-
-    def __str__(self):
-        return f"Participante: {self.usuario.username}"
-
-
-class Instructor(models.Model):
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, primary_key=True)
-
-    def __str__(self):
-        return f"Instructor: {self.usuario.username}"
-
-
-# 3. Configuraciones y Modelos de Inscripción e Historial (Andrea)
+from datetime import timedelta
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico
 porcentaje_lista_espera = 0.20
 horas_limite_cancelacion = 3
 
 
-class Inscripcion(models.Model):
-    ESTADOS = [
-        ('CONFIRMADO', 'Confirmado'),
-        ('EN_ESPERA', 'En Espera'),
-        ('CANCELADO', 'Cancelado'),
-    ]
+class Operador: #Andrea
 
-    participante = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='inscripciones')
-    taller = models.ForeignKey('Taller', on_delete=models.CASCADE, related_name='inscripciones')
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='CONFIRMADO')
-    posicion_espera = models.PositiveIntegerField(null=True, blank=True)
-    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    @staticmethod
+    def agregar_a_lista_de_espera(participante, taller):
+        cupo_espera = int(taller.cupo_maximo * porcentaje_lista_espera)
+        en_espera = Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').count()
+        if en_espera < cupo_espera:
+            return Inscripcion.objects.create(
+                participante=participante,
+                taller=taller,
+                estado='EN_ESPERA',
+                posicion_espera=en_espera + 1
+            )
+        raise ValidationError("El taller y la lista de espera están llenos.")
 
-    class Meta:
-        unique_together = ('participante', 'taller')
+    @staticmethod
+    def promover_siguiente_en_espera(taller):
+        primero = Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').order_by('posicion_espera').first()
+        if primero:
+            primero.estado = 'CONFIRMADO'
+            primero.posicion_espera = None
+            primero.save()
 
-    def __str__(self):
-        return f"{self.participante.username} - {self.taller} ({self.estado})"
+            restantes = Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').order_by('posicion_espera')
+            for posicion, item in enumerate(restantes, start=1):
+                item.posicion_espera = posicion
+                item.save()
 
+    @classmethod
+    def registrar_inscripcion(cls, participante, taller):
+        cls.verificar_que_sea_estudiante_registrado(participante) #gonzalo
+        cls.verificar_que_el_taller_no_haya_empezado(taller)
+        cls.verificar_que_el_usuario_no_este_inscrito(participante, taller)
+        cls.verificar_que_no_tenga_cruce_de_horario(participante, taller)
 
-class HistorialCancelacion(models.Model):
-    participante = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='cancelaciones')
-    taller = models.ForeignKey('Taller', on_delete=models.CASCADE)
-    fecha_cancelacion = models.DateTimeField(auto_now_add=True)
+        confirmados = Inscripcion.objects.filter(taller=taller, estado='CONFIRMADO').count()
+        if confirmados < taller.cupo_maximo:
+            return Inscripcion.objects.create(participante=participante, taller=taller, estado='CONFIRMADO')
 
-    def __str__(self):
-        return f"Cancelación: {self.participante.username} - {self.taller}"
+        return cls.agregar_a_lista_de_espera(participante, taller)
+
+    @classmethod
+    def cancelar_inscripcion(cls, participante, taller):
+        plazo_limite = taller.fecha_inicio - timedelta(hours=horas_limite_cancelacion)
+        if timezone.now() > plazo_limite:
+            raise ValidationError("Ya pasó el tiempo límite para cancelar.")
+
+        inscripcion = Inscripcion.objects.filter(
+            participante=participante,
+            taller=taller,
+            estado__in=['CONFIRMADO', 'EN_ESPERA']
+        ).first()
+
+        if not inscripcion:
+            raise ValidationError("No existe inscripción activa para cancelar.")
+
+        era_confirmado = (inscripcion.estado == 'CONFIRMADO')
+        inscripcion.estado = 'CANCELADO'
+        inscripcion.posicion_espera = None
+        inscripcion.save()
+
+        HistorialCancelacion.objects.create(participante=participante, taller=taller)
+
+        if era_confirmado:
+            cls.promover_siguiente_en_espera(taller)
+
+        return inscripcion
+
+    # --- MÉTODOS DE VALIDACIÓN ---
+    @staticmethod
+    def verificar_que_sea_estudiante_registrado(participante):
+        """
+        Consulta la BD estática para confirmar que el código del participante
+        pertenezca a la lista de estudiantes autorizados.
+        """
+        # Si el modelo tiene campo `codigo` en Usuario:
+        codigo_estudiante = getattr(participante, 'codigo', None)
+
+        es_valido = EstudianteEstatico.objects.using('estudiantes_db').filter(
+            codigo=codigo_estudiante
+        ).exists()
+
+        if not es_valido:
+            raise ValidationError("El usuario no figura en la lista estática de estudiantes autorizados.")
+    @staticmethod
+    def verificar_que_el_taller_no_haya_empezado(taller):
+        if timezone.now() >= taller.fecha_inicio:
+            raise ValidationError("El taller ya empezó.")
+
+    @staticmethod
+    def verificar_que_el_usuario_no_este_inscrito(participante, taller):
+        ya_inscrito = Inscripcion.objects.filter(
+            participante=participante,
+            taller=taller,
+            estado__in=['CONFIRMADO', 'EN_ESPERA']
+        ).exists()
+        if ya_inscrito:
+            raise ValidationError(f"El participante ya se encuentra registrado en el taller {taller.codigo}.")
+
+    @staticmethod
+    def verificar_que_no_tenga_cruce_de_horario(participante, taller):
+        hay_cruce = Inscripcion.objects.filter(
+            participante=participante,
+            estado='CONFIRMADO',
+            taller__fecha_inicio__lt=taller.fecha_fin,
+            taller__fecha_fin__gt=taller.fecha_inicio
+        ).exists()
+        if hay_cruce:
+            raise ValidationError("El participante ya tiene otro taller en este horario.")
