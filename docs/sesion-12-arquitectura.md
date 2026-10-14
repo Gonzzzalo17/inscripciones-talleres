@@ -136,7 +136,7 @@ flowchart LR
 - Reporte de pruebas: artefacto `resultados-sesion12-38462841472-1` (446 bytes, el XML de JUnit), en la sección Artifacts de la ejecución.
 - Avisos de la ejecución (no afectan el resultado): una advertencia de que las acciones `actions/setup-python@v5` y `actions/upload-artifact@v4` usan Node.js 20, que está obsoleto y GitHub las fuerza a correr en Node.js 24; y un aviso de que la etiqueta `ubuntu-latest` pasa a Ubuntu 26 desde el 19 de octubre de 2026. No cambiamos el workflow del material; si una ejecución futura falla por eso, habrá que fijar `ubuntu-24.04` o actualizar las versiones de las acciones.
 - Candidato de código fuente: todavía no generado. Ese paso solo corre cuando las pruebas pasan en `main`, y esta ejecución fue en la rama `sesion12`.
-- Commit del MD, si fue posterior: **[COMPLETAR: SHA del commit que sube este MD; es posterior a `8c4c22a`, porque el MD no estaba en la ejecución probada]**
+- Commit del MD, si fue posterior: el MD se subió por primera vez en el commit `6a190decc6ab19f7880d9b02e9dab46426102204`, posterior al commit probado `8c4c22a`. La única diferencia entre los dos es este documento: no hay cambios de código ni de pruebas. Este commit también corre el CI, porque el workflow se ejecuta en cada push.
 - Qué falta para una entrega o despliegue en el entorno destino: no hay despliegue. Falta el servidor Django (instalar `django>=6.1`, configurar `config/settings.py`), la base de datos con sus migraciones, publicar e integrar las vistas y templates, y pruebas con la base de datos real.
 
 ## 8. Plan actualizado y participación
