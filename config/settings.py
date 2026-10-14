@@ -74,16 +74,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
+    # 1. Base de datos principal de tu app (Talleres, Inscripciones, etc.)
     'default': {
-'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'inscripciones_db',
-        'USER': 'root',
-        'PASSWORD': '1438',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    },
+    # 2. Base de datos estática de estudiantes
+    'estudiantes_db': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'estudiantes_estatica.sqlite3',  # O PostgreSQL/MySQL según donde esté
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
@@ -130,3 +131,5 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+AUTH_USER_MODEL = 'inscripciones.Usuario'
+DATABASE_ROUTERS = ['inscripciones.db_router.EstudiantesRouter']

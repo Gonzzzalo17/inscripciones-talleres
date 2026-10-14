@@ -179,6 +179,6 @@ Estos escenarios están especificados; ninguno fue ejecutado todavía.
 
 ## 6. Siguiente paso
 
-- Tarea: implementar en `proyecto/reglas.py` la función de solicitar plaza (confirmar, poner en espera con límite del 20 % o rechazar) y sus pruebas en `tests/`.
+- Tarea: implementar en `../inscripciones/servicios/reglas_servicios/reglas.py` la función de solicitar plaza (confirmar, poner en espera con límite del 20 % o rechazar) y sus pruebas en `tests/`.
 - Requisito relacionado: TAL-RF-01 y TAL-RF-02
 - Responsable inicial: Santiago
