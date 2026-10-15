@@ -3,7 +3,7 @@ import copy
 
 import pytest
 
-from proyecto.reglas import crear_taller, registrar_inscripcion
+from inscripciones.servicios.reglas_service import crear_taller, registrar_inscripcion
 
 
 def cis_inscritos(taller):
