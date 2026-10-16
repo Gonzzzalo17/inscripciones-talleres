@@ -1,12 +1,12 @@
 {% extends "inscripciones/base.html" %}
 
-{% block titulo %}Inscribirse en {{ taller.codigo }}{% endblock %}
+{% block titulo %}Inscribirse en {{ taller.nombre }}{% endblock %}
 
 {% block contenido %}
-<h1>Solicitar inscripción a {{ taller.codigo }}</h1>
+<h1>Solicitar inscripción a {{ taller.nombre }}</h1>
 
 {% if error %}
-    {# Rechazo: E1 (ya empezó), E3 (choque de horario), E5 (todo lleno) o duplicado #}
+    {# Rechazo: E1 (ya empezó), E3 (choque de horario), E5 (todo lleno), duplicado o estudiante no autorizado #}
     <div class="aviso rechazo">
         <strong>Solicitud rechazada.</strong> {{ error }}
     </div>
@@ -14,6 +14,8 @@
 
 <div class="caja">
     <dl class="datos">
+        <dt>Código</dt>
+        <dd>{{ taller.codigo }}</dd>
         <dt>Inicio</dt>
         <dd>{{ taller.fecha_inicio|date:"d/m/Y H:i" }}</dd>
         <dt>Fin</dt>
@@ -34,7 +36,7 @@
                 <option value="">Elige un participante</option>
                 {% for p in participantes %}
                     <option value="{{ p.pk }}" {% if p.pk|stringformat:"s" == participante_seleccionado %}selected{% endif %}>
-                        {{ p.get_full_name|default:p.username }}
+                        {{ p.get_full_name|default:p.username }}{% if p.codigo %} ({{ p.codigo }}){% endif %}
                     </option>
                 {% endfor %}
             </select>

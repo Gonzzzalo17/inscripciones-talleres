@@ -9,12 +9,12 @@
     <div class="aviso confirmado">
         <strong>Inscripción confirmada.</strong>
         {{ inscripcion.participante.get_full_name|default:inscripcion.participante.username }}
-        tiene una plaza en el taller {{ inscripcion.taller.codigo }}.
+        tiene una plaza en el taller {{ inscripcion.taller.nombre }}.
     </div>
 {% elif inscripcion.estado == "EN_ESPERA" %}
     <div class="aviso espera">
         <strong>En lista de espera.</strong>
-        El taller {{ inscripcion.taller.codigo }} está lleno.
+        El taller {{ inscripcion.taller.nombre }} está lleno.
         {{ inscripcion.participante.get_full_name|default:inscripcion.participante.username }}
         quedó en la posición {{ inscripcion.posicion_espera }} de la lista de espera.
     </div>
@@ -23,7 +23,9 @@
 <div class="caja">
     <dl class="datos">
         <dt>Taller</dt>
-        <dd>{{ inscripcion.taller.codigo }}</dd>
+        <dd>{{ inscripcion.taller.nombre }} ({{ inscripcion.taller.codigo }})</dd>
+        <dt>Participante</dt>
+        <dd>{{ inscripcion.participante.get_full_name|default:inscripcion.participante.username }}{% if inscripcion.participante.codigo %} ({{ inscripcion.participante.codigo }}){% endif %}</dd>
         <dt>Estado</dt>
         <dd>{{ inscripcion.get_estado_display }}</dd>
         <dt>Fecha de solicitud</dt>

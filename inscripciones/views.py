@@ -1,11 +1,10 @@
-from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from proyecto.operador import Operador, porcentaje_lista_espera
 from .forms import TallerForm
-from .models import Inscripcion, Taller
+from .models import Inscripcion, Taller, Usuario
+from .servicios.operador import Operador, porcentaje_lista_espera
 
 
 def lista_talleres(request):
@@ -29,6 +28,7 @@ def crear_taller(request):
 
 def solicitar_inscripcion(request, pk):
     taller = get_object_or_404(Taller, pk=pk)
+    participantes = Usuario.objects.filter(rol=Usuario.Rol.PARTICIPANTE).order_by('username')
     error = None
     participante_seleccionado = ''
 
@@ -36,7 +36,7 @@ def solicitar_inscripcion(request, pk):
         participante_seleccionado = request.POST.get('participante', '')
         participante = None
         if participante_seleccionado.isdigit():
-            participante = User.objects.filter(pk=participante_seleccionado).first()
+            participante = participantes.filter(pk=participante_seleccionado).first()
 
         if participante is None:
             error = "Elige un participante de la lista."
@@ -53,7 +53,7 @@ def solicitar_inscripcion(request, pk):
         'ocupadas': taller.inscripciones.filter(estado='CONFIRMADO').count(),
         'en_espera': taller.inscripciones.filter(estado='EN_ESPERA').count(),
         'limite_espera': int(taller.cupo_maximo * porcentaje_lista_espera),
-        'participantes': User.objects.order_by('username'),
+        'participantes': participantes,
         'error': error,
         'participante_seleccionado': participante_seleccionado,
     }

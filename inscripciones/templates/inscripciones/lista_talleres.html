@@ -11,6 +11,7 @@
             <thead>
                 <tr>
                     <th>Código</th>
+                    <th>Nombre</th>
                     <th>Inicio</th>
                     <th>Fin</th>
                     <th>Plazas ocupadas</th>
@@ -22,6 +23,7 @@
                 {% for taller in talleres %}
                     <tr>
                         <td>{{ taller.codigo }}</td>
+                        <td>{{ taller.nombre }}</td>
                         <td>{{ taller.fecha_inicio|date:"d/m/Y H:i" }}</td>
                         <td>{{ taller.fecha_fin|date:"d/m/Y H:i" }}</td>
                         <td>
