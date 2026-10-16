@@ -1,13 +1,12 @@
 from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from inscripciones.models import Inscripcion, HistorialCancelacion
-
+from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico
 porcentaje_lista_espera = 0.20
 horas_limite_cancelacion = 3
 
 
-class Operador:
+class Operador: #Andrea
 
     @staticmethod
     def agregar_a_lista_de_espera(participante, taller):
@@ -37,6 +36,7 @@ class Operador:
 
     @classmethod
     def registrar_inscripcion(cls, participante, taller):
+        cls.verificar_que_sea_estudiante_registrado(participante) #gonzalo
         cls.verificar_que_el_taller_no_haya_empezado(taller)
         cls.verificar_que_el_usuario_no_este_inscrito(participante, taller)
         cls.verificar_que_no_tenga_cruce_de_horario(participante, taller)
@@ -74,6 +74,22 @@ class Operador:
 
         return inscripcion
 
+    # --- MÉTODOS DE VALIDACIÓN ---
+    @staticmethod
+    def verificar_que_sea_estudiante_registrado(participante):
+        """
+        Consulta la BD estática para confirmar que el código del participante
+        pertenezca a la lista de estudiantes autorizados.
+        """
+        # Si el modelo tiene campo `codigo` en Usuario:
+        codigo_estudiante = getattr(participante, 'codigo', None)
+
+        es_valido = EstudianteEstatico.objects.using('estudiantes_db').filter(
+            codigo=codigo_estudiante
+        ).exists()
+
+        if not es_valido:
+            raise ValidationError("El usuario no figura en la lista estática de estudiantes autorizados.")
     @staticmethod
     def verificar_que_el_taller_no_haya_empezado(taller):
         if timezone.now() >= taller.fecha_inicio:
@@ -99,4 +115,3 @@ class Operador:
         ).exists()
         if hay_cruce:
             raise ValidationError("El participante ya tiene otro taller en este horario.")
-
