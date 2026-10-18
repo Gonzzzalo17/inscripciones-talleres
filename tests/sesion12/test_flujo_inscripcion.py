@@ -1,9 +1,7 @@
 """Sesión 12 - tres pruebas del flujo "Solicitar inscripción" (P03)."""
 import copy
-
 import pytest
-
-from inscripciones.servicios.reglas_service import crear_taller, registrar_inscripcion
+from version_inicial.reglas_sesion04 import crear_taller, registrar_inscripcion
 
 
 def cis_inscritos(taller):

@@ -1,7 +1,6 @@
-    import pytest
+import pytest
 
-from inscripciones.servicios.reglas_servicios.reglas import crear_taller, registrar_inscripcion
-
+from version_inicial.reglas_sesion04 import crear_taller, registrar_inscripcion
 
 def cis_inscritos(taller):
     return [registro["id_participante"] for registro in taller.inscritos]

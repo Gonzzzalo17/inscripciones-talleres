@@ -1,8 +1,8 @@
+# MODELO (datos) — Aquí solo se definen las TABLAS de la base de datos (Taller, Inscripcion, Usuario...)
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-porcentaje_lista_espera = 0.20
-horas_limite_cancelacion = 3
 
 class EstudianteEstatico(models.Model):
     codigo = models.CharField(max_length=20, unique=True)
