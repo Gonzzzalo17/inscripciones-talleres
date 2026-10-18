@@ -5,17 +5,16 @@ from django.contrib.auth.models import AbstractUser
 
 
 class EstudianteEstatico(models.Model):
-    codigo = models.CharField(max_length=20, unique=True)
+    codigo = models.CharField(max_length=20, primary_key=True, db_column='ci')
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
 
     class Meta:
         managed = False  # IMPORTANTE: Indica a Django que NO cree ni modifique esta tabla (es de solo lectura/estática)
         db_table = 'estudiantes'  # Nombre de la tabla exacta en tu BD estática
 
 
-# 1. Clase Base de Usuario (Hereda de AbstractUser de Django)
+# 1. Clase Base de Usuario
 class Usuario(AbstractUser):
     class Rol(models.TextChoices):
         COORDINADOR = 'COORDINADOR', 'Coordinador'
