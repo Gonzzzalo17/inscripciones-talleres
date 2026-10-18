@@ -2,8 +2,9 @@ from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico
-from inscripciones.servicios.config import porcentaje_lista_espera, horas_limite_cancelacion
 
+porcentaje_lista_espera = 0.20
+horas_limite_cancelacion = 3
 
 class Operador: #Andrea
 

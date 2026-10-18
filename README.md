@@ -32,7 +32,6 @@ docs/                          documentación por sesión, plan y diagramas
 |---|---|---|
 | Una pantalla (HTML) | `inscripciones/templates/inscripciones/` | Santiago |
 | Una regla (cupo, espera, cancelación) | `inscripciones/servicios/` | Andrea y Santiago |
-| Un valor de una regla | `inscripciones/servicios/config.py` | Quien la necesite |
 | Una tabla de la base de datos | `inscripciones/models.py` | Gonzalo |
 | Conectar una pantalla con su regla | `inscripciones/views.py` y `urls.py` | Gonzalo |
 | Una prueba | `tests/test_<archivo>.py` | Quien hizo la regla |
