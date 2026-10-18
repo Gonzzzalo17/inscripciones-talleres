@@ -150,3 +150,11 @@ def test_cancelar_fuera_de_plazo_conserva_la_inscripcion():
         Operador.cancelar_inscripcion(usuario(1), t)
     assert estado(1, t) == "CONFIRMADO"
     assert HistorialCancelacion.objects.count() == 0
+
+def test_cancela_alguien_en_espera_y_las_posiciones_se_reordenan():
+    t = taller(cupo=10, empieza_en_horas=24)
+    for i in range(1, 13):               # 10 confirmados, 11 y 12 en espera
+        solicitar(i, t)
+    Operador.cancelar_inscripcion(usuario(11), t)
+    restante = Inscripcion.objects.get(participante=usuario(12), taller=t)
+    assert restante.posicion_espera == 1

@@ -19,7 +19,6 @@ class Operador: #Andrea
     @classmethod
     def agregar_a_lista_de_espera(cls,participante, taller):
         capacidad=cls.capacidad_lista_de_espera(taller.cupo_maximo)
-        cupo_espera = int(taller.cupo_maximo * porcentaje_lista_espera)
         en_espera = Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').count()
         if en_espera < capacidad:
             return Inscripcion.objects.create(
@@ -34,16 +33,18 @@ class Operador: #Andrea
     def promover_siguiente_en_espera(taller):
         primero = Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').order_by('posicion_espera').first()
         if not primero:
-            return None;
+            return None
         primero.estado = 'CONFIRMADO'
         primero.posicion_espera = None
         primero.save()
 
-        restantes = (Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').order_by('posicion_espera'))
-        for posicion, item in enumerate(restantes, start=1):
-            item.posicion_espera = posicion
-            item.save()
-        return primero
+    @staticmethod
+    def actualizar_posiciones_lista_de_espera(taller):
+        # Vuelve a numerar la espera desde 1, sin huecos (ej.: 2, 3 -> 1, 2)
+        inscripciones_en_espera= (Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').order_by('posicion_espera'))
+        for nueva_posicion, inscripcion in enumerate(inscripciones_en_espera, start=1):
+            inscripcion.posicion_espera = nueva_posicion
+            inscripcion.save()
 
     @classmethod
     @transaction.atomic
@@ -84,6 +85,7 @@ class Operador: #Andrea
 
         if era_confirmado:
             cls.promover_siguiente_en_espera(taller)
+        cls.actualizar_posiciones_lista_de_espera(taller)
 
         return inscripcion
 
