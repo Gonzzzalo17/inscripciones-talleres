@@ -1,19 +1,17 @@
 import math
 from datetime import timedelta
-
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
+from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico
 
-from inscripciones.models import (
-    EstudianteEstatico, HistorialCancelacion, Inscripcion,
-    horas_limite_cancelacion, porcentaje_lista_espera,
-)
+porcentaje_lista_espera = 0.20
+horas_limite_cancelacion = 3
 
 ALIAS_PADRON = 'estudiantes_db'
 
+class Operador: #Andrea
 
-class Operador:#Andrea
     @staticmethod
     def capacidad_lista_de_espera(cupo_maximo):
         #20% redondeado hacia arriba
