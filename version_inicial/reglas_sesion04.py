@@ -1,5 +1,5 @@
 import uuid
-
+#prototipo
 
 class Taller:
     def __init__(self, nombreTaller: str, cupo_maximo: int, categoriaTaller: str):
