@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import TallerForm
 from .models import Inscripcion, Taller, Usuario
-from .servicios.operador import Operador, porcentaje_lista_espera
+from .servicios.operador import Operador
 
 
 def lista_talleres(request):
@@ -52,7 +52,7 @@ def solicitar_inscripcion(request, pk):
         'taller': taller,
         'ocupadas': taller.inscripciones.filter(estado='CONFIRMADO').count(),
         'en_espera': taller.inscripciones.filter(estado='EN_ESPERA').count(),
-        'limite_espera': int(taller.cupo_maximo * porcentaje_lista_espera),
+        'limite_espera': Operador.capacidad_lista_de_espera(taller.cupo_maximo),
         'participantes': participantes,
         'error': error,
         'participante_seleccionado': participante_seleccionado,
