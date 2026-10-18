@@ -1,0 +1,31 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Crear taller{% endblock %}
+
+{% block contenido %}
+<h1>Crear taller</h1>
+
+<div class="caja">
+    <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="aviso rechazo">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+
+        {% for campo in form %}
+            <div class="campo">
+                <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+                {{ campo }}
+                {% if campo.help_text %}<p class="ayuda">{{ campo.help_text }}</p>{% endif %}
+                {% for error in campo.errors %}<p class="error-campo">{{ error }}</p>{% endfor %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="boton">Crear taller</button>
+        <a class="boton secundario" href="{% url 'lista_talleres' %}">Cancelar</a>
+    </form>
+</div>
+{% endblock %}
