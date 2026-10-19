@@ -1,0 +1,29 @@
+sequenceDiagram
+    title CU-05 Entrar a lista de espera (HU-02)
+    actor P as Participante
+    participant UI as resultado_inscripcion.html
+    participant V as views.solicitar_inscripcion
+    participant O as Operador (servicio)
+    participant I as Inscripcion (modelo)
+    participant DB as BD principal
+
+    Note over V,O: Viene de CU-04: pasó todas las validaciones.<br/>E2 "ya está en espera" se controla en CU-04 (E3)
+    O->>O: El taller no tiene plazas libres (confirmados = cupo_maximo)
+    O->>O: agregar_a_lista_de_espera(participante, taller)
+    O->>O: capacidad = 20 % del cupo, redondeado hacia arriba
+    O->>I: count(EN_ESPERA) del taller
+    I->>DB: SELECT COUNT
+    DB-->>I: en_espera
+    I-->>O: en_espera
+    alt E1: en_espera >= capacidad (lista de espera llena)
+        O-->>V: ValidationError("El taller y la lista de espera están llenos")
+        V-->>P: Muestra el error (no cambia nada)
+    else Hay lugar en la lista
+        O->>I: create(estado = EN_ESPERA, posicion_espera = en_espera + 1)
+        I->>DB: INSERT inscripción
+        DB-->>I: OK
+        I-->>O: Inscripción
+        O-->>V: Inscripción EN_ESPERA
+        V->>UI: redirect a resultado_inscripcion
+        UI-->>P: Estado: EN ESPERA, posición N
+    end
