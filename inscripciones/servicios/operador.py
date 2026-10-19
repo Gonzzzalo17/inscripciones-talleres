@@ -31,12 +31,17 @@ class Operador: #Andrea
 
     @staticmethod
     def promover_siguiente_en_espera(taller):
-        primero = Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').order_by('posicion_espera').first()
+        primero = (Inscripcion.objects
+                   .filter(taller=taller, estado='EN_ESPERA')
+                   .order_by('posicion_espera').first())
         if not primero:
             return None
         primero.estado = 'CONFIRMADO'
         primero.posicion_espera = None
         primero.save()
+        return primero
+
+
 
     @staticmethod
     def actualizar_posiciones_lista_de_espera(taller):
@@ -68,11 +73,9 @@ class Operador: #Andrea
             raise ValidationError("Ya pasó el tiempo límite para cancelar.")
 
         inscripcion = Inscripcion.objects.filter(
-            participante=participante,
-            taller=taller,
+            participante=participante, taller=taller,
             estado__in=['CONFIRMADO', 'EN_ESPERA']
         ).first()
-
         if not inscripcion:
             raise ValidationError("No existe inscripción activa para cancelar.")
 
@@ -83,11 +86,28 @@ class Operador: #Andrea
 
         HistorialCancelacion.objects.create(participante=participante, taller=taller)
 
+        promovido = None
         if era_confirmado:
-            cls.promover_siguiente_en_espera(taller)
+            promovido = cls.promover_siguiente_en_espera(taller)
         cls.actualizar_posiciones_lista_de_espera(taller)
+        return inscripcion, promovido  # <- ahora devuelve ambos
 
-        return inscripcion
+    @classmethod
+    @transaction.atomic
+    def promover_hasta_llenar(cls, taller):
+        """Confirma a la espera en orden hasta llenar el cupo. Devuelve los promovidos."""
+        promovidos = []
+        while True:
+            confirmados = Inscripcion.objects.filter(
+                taller=taller, estado='CONFIRMADO').count()
+            if confirmados >= taller.cupo_maximo:
+                break
+            promovido = cls.promover_siguiente_en_espera(taller)
+            if promovido is None:
+                break
+            promovidos.append(promovido)
+        cls.actualizar_posiciones_lista_de_espera(taller)  # <- renumerar al final
+        return promovidos
 
     # --- MÉTODOS DE VALIDACIÓN ---
     @staticmethod
