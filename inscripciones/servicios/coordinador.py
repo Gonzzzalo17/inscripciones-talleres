@@ -3,12 +3,12 @@ import unicodedata
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-
+from django.utils import timezone
 from inscripciones.models import Taller
 
 PREFIJO = "TAL"
 PALABRAS_VACIAS = {"taller", "talleres", "clase", "clases", "de", "del", "la", "el", "los", "las"}
-
+MAX_NOMBRE = 100
 class Coordinador:
     @staticmethod
     def abreviatura_actividad(nombre):
@@ -50,3 +50,37 @@ class Coordinador:
             except IntegrityError:
                 continue
         raise ValidationError("No se pudo generar un código único. Intenta de nuevo.")
+
+    @staticmethod
+    @transaction.atomic
+    def editar_taller(taller_id, nombre, cupo_maximo, fecha_inicio, fecha_fin):
+        try:
+            taller = Taller.objects.select_for_update().get(pk=taller_id)
+        except Taller.DoesNotExist:
+            raise ValidationError("El taller no existe.")
+
+        ahora = timezone.now()
+        if taller.fecha_inicio <= ahora:
+            raise ValidationError("El taller ya empezó y no se puede editar.")
+
+        nombre = (nombre or "").strip()
+        if not nombre:
+            raise ValidationError("El nombre del taller no puede estar vacío.")
+        if len(nombre) > MAX_NOMBRE:
+            raise ValidationError(f"El nombre no puede superar {MAX_NOMBRE} caracteres.")
+        if cupo_maximo <= 0:
+            raise ValidationError("El cupo debe ser mayor que cero.")
+        if cupo_maximo < taller.cupo_maximo:
+            raise ValidationError(
+                f"El cupo solo puede aumentar (actual: {taller.cupo_maximo}).")
+        if fecha_inicio < ahora:
+            raise ValidationError("La fecha de inicio no puede ser anterior a la actual.")
+        if fecha_fin <= fecha_inicio:
+            raise ValidationError("La hora de fin debe ser posterior a la de inicio.")
+
+        taller.nombre = nombre
+        taller.cupo_maximo = cupo_maximo
+        taller.fecha_inicio = fecha_inicio
+        taller.fecha_fin = fecha_fin
+        taller.save(update_fields=["nombre", "cupo_maximo", "fecha_inicio", "fecha_fin"])
+        return taller
