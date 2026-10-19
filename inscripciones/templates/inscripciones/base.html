@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}Talleres{% endblock %} | Inscripciones</title>
+    <style>
+        :root {
+            --azul: #1F3A5F;
+            --fondo: #F5F6F8;
+            --texto: #1E1E1E;
+            --gris: #6B7280;
+            --borde: #D6D9DE;
+            --verde: #2E7D4F;
+            --ambar: #A86512;
+            --rojo: #B23A3A;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+            background: var(--fondo);
+            color: var(--texto);
+            line-height: 1.5;
+        }
+        header {
+            background: var(--azul);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+        header .marca { font-weight: 700; font-size: 1.1rem; }
+        header nav a { color: white; text-decoration: none; margin-left: 1rem; opacity: 0.85; }
+        header nav a:hover { opacity: 1; text-decoration: underline; }
+        main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        h1 { color: var(--azul); margin-top: 0; }
+
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--borde); text-align: left; }
+        th { background: #E9ECF1; font-weight: 600; }
+        .tabla-contenedor { overflow-x: auto; }
+
+        .caja { background: white; border: 1px solid var(--borde); border-radius: 8px; padding: 1.2rem 1.5rem; margin-bottom: 1.5rem; }
+        .vacio { color: var(--gris); font-style: italic; }
+        .datos dt { font-weight: 600; color: var(--gris); }
+        .datos dd { margin: 0 0 0.6rem; }
+
+        /* Resultado de la solicitud */
+        .aviso { padding: 0.9rem 1.1rem; border-radius: 6px; border-left: 6px solid; margin-bottom: 1.5rem; background: white; }
+        .aviso.confirmado { border-color: var(--verde); background: #E3F2E9; }
+        .aviso.espera { border-color: var(--ambar); background: #FBF0DF; }
+        .aviso.rechazo { border-color: var(--rojo); background: #F8E3E3; }
+        .lleno { color: var(--rojo); font-weight: 600; }
+
+        /* Formularios */
+        label { display: block; font-weight: 600; margin-bottom: 0.3rem; }
+        input, select { width: 100%; max-width: 360px; padding: 0.5rem; border: 1px solid var(--borde); border-radius: 6px; font-size: 1rem; }
+        .campo { margin-bottom: 1rem; }
+        .error-campo { color: var(--rojo); font-size: 0.9rem; margin: 0.3rem 0 0; }
+        .ayuda { color: var(--gris); font-size: 0.9rem; margin: 0.3rem 0 0; }
+
+        .boton {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            background: var(--azul);
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .boton:hover { filter: brightness(1.15); }
+        .boton.secundario { background: white; color: var(--azul); border: 1px solid var(--azul); }
+        .boton:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 3px solid #F2C14E;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <span class="marca">Inscripciones a talleres</span>
+        <nav>
+            <a href="{% url 'lista_talleres' %}">Talleres</a>
+            <a href="{% url 'crear_taller' %}">Crear taller</a>
+        </nav>
+    </header>
+
+    <main>
+        {% block contenido %}{% endblock %}
+    </main>
+</body>
+</html>
