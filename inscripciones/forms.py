@@ -1,5 +1,5 @@
 from django import forms
-
+from datetime import timedelta
 from .models import Taller
 
 
@@ -25,4 +25,7 @@ class TallerForm(forms.ModelForm):
         fin = datos.get('fecha_fin')
         if inicio and fin and fin <= inicio:
             raise forms.ValidationError("La fecha de fin debe ser posterior a la de inicio.")
+        limite_maximo= inicio + timedelta(days=30)
+        if fin>limite_maximo:
+            raise forms.ValidationError("La duración del taller no puede superar los 30 días desde la fecha de inicio.")
         return datos

@@ -1,0 +1,27 @@
+sequenceDiagram
+    title CU-03 Ver talleres disponibles (HU-01)
+    actor P as Participante / Operador
+    participant UI as lista_talleres.html
+    participant V as views.lista_talleres
+    participant T as Taller (modelo)
+    participant O as Operador (servicio)
+    participant DB as BD principal
+
+    P->>UI: Abre la sección "Talleres"
+    UI->>V: GET /
+    V->>T: objects.annotate(ocupadas, en_espera)
+    T->>DB: SELECT talleres + COUNT de inscripciones por estado
+    DB-->>T: Filas
+    T-->>V: Talleres publicados
+    alt E1: no hay talleres publicados
+        V-->>UI: Lista vacía
+        UI-->>P: Mensaje informativo "No hay talleres"
+    else Hay talleres
+        loop Por cada taller
+            V->>V: libres = cupo_maximo - ocupadas
+            V->>O: capacidad_lista_de_espera(cupo_maximo)
+            O-->>V: Máximo de espera (20 %, redondeado hacia arriba)
+        end
+        V-->>UI: render(talleres, libres, en espera / máximo)
+        UI-->>P: Código, fechas, cupo, plazas libres y lista de espera
+    end
