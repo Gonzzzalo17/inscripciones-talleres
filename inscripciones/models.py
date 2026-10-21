@@ -7,6 +7,7 @@ class EstudianteEstatico(models.Model):
     codigo = models.CharField(max_length=20, primary_key=True, db_column='ci')
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
+    carrera = models.CharField(max_length=100, blank=True, null=True)  # <-- Agregamos esto
 
     class Meta:
         managed = False  # IMPORTANTE: Indica a Django que NO cree ni modifique esta tabla (es de solo lectura/estática)
