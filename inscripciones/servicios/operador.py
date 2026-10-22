@@ -3,11 +3,11 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico
+from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion
 
 porcentaje_lista_espera = 0.20
 horas_limite_cancelacion = 3
-
+mensaje_al_pasar_de_espera_a_confirmado = "Felicidades, se liberó una plaza y ya estás inscrito en el taller {taller}."
 ALIAS_PADRON = 'estudiantes_db'
 
 class Operador: #Andrea
@@ -31,15 +31,21 @@ class Operador: #Andrea
 
     @staticmethod
     def promover_siguiente_en_espera(taller):
-        primero = (Inscripcion.objects
+        primero_en_espera = (Inscripcion.objects
                    .filter(taller=taller, estado='EN_ESPERA')
                    .order_by('posicion_espera').first())
-        if not primero:
+        if primero_en_espera is None:
             return None
-        primero.estado = 'CONFIRMADO'
-        primero.posicion_espera = None
-        primero.save()
-        return primero
+        primero_en_espera.estado = 'CONFIRMADO'
+        primero_en_espera.posicion_espera = None
+        primero_en_espera.save()
+
+        Notificacion.objects.create(
+            participante=primero_en_espera.participante,
+            taller=taller,
+            mensaje=mensaje_al_pasar_de_espera_a_confirmado.format(taller=taller.nombre),
+        )
+        return primero_en_espera
 
 
 
