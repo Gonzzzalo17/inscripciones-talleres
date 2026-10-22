@@ -7,8 +7,8 @@ from .models import (
 
 @admin.register(EstudianteEstatico)
 class EstudianteEstaticoAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nombre', 'apellido')
-    search_fields = ('codigo', 'nombre', 'apellido')
+    list_display = ('codigo', 'nombre', 'apellido','carrera')
+    search_fields = ('codigo', 'nombre', 'apellido','carrera')
 
 
 @admin.register(Taller)

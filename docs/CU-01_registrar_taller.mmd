@@ -1,0 +1,43 @@
+sequenceDiagram
+    title CU-01 Registrar un taller (HU-01)
+    actor C as Coordinador
+    participant UI as crear_taller.html
+    participant V as views.crear_taller
+    participant F as TallerForm
+    participant S as Servicio Coordinador
+    participant T as Taller (modelo)
+    participant DB as BD principal
+
+    C->>UI: Selecciona "Crear taller"
+    UI->>V: GET /talleres/nuevo/
+    V-->>UI: Formulario vacío
+    C->>UI: Ingresa nombre, cupo máximo, inicio y fin
+    UI->>V: POST datos del taller
+    V->>F: is_valid()
+    F->>F: Valida campos obligatorios, cupo > 0, fin > inicio
+    alt E1 / E2: falta un campo o el fin no es posterior al inicio
+        F-->>V: Errores de validación
+        V-->>UI: Muestra el error (no se guarda nada)
+        UI-->>C: Mensaje de error
+    else Datos válidos
+        F-->>V: Datos limpios
+        V->>S: registrar_taller(datos)
+        S->>S: generar_codigo(nombre): 3 letras + "PAR" + 2 dígitos
+        S->>T: ¿Existe un taller con ese código?
+        T->>DB: SELECT por código
+        DB-->>T: Resultado
+        T-->>S: existe / no existe
+        alt E3: código duplicado
+            S-->>V: ValidationError("Código repetido")
+            V-->>UI: Muestra el error (el taller existente no cambia)
+            UI-->>C: Mensaje de error
+        else Código único
+            S->>T: create(nombre, código, cupo, inicio, fin)
+            T->>DB: INSERT taller
+            DB-->>T: OK
+            T-->>S: Taller creado
+            S-->>V: Taller
+            V-->>UI: redirect a lista de talleres
+            UI-->>C: Taller publicado con su código (ej. DAN-PAR-01)
+        end
+    end
