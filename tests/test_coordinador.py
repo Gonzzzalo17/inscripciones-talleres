@@ -82,3 +82,15 @@ def test_subir_el_cupo_confirma_al_primero_en_espera_y_el_segundo_pasa_a_ser_pri
     assert Operador.promover_hasta_llenar(taller) == [primero_en_espera]
     segundo_en_espera.refresh_from_db()
     assert segundo_en_espera.posicion_espera == 1
+
+def test_subir_el_cupo_nunca_confirma_mas_que_el_nuevo_cupo():
+    taller = crear_taller_que_empieza_manana(cupo=1)
+    inscribir_participante(taller, "CONFIRMADO")
+    for posicion in (1, 2, 3):
+        inscribir_participante(taller, "EN_ESPERA", posicion_espera=posicion)
+    taller.cupo_maximo = 3
+    taller.save()
+
+    Operador.promover_hasta_llenar(taller)
+    assert taller.inscripciones.filter(estado="CONFIRMADO").count() == 3
+    assert taller.inscripciones.filter(estado="EN_ESPERA").count() == 1

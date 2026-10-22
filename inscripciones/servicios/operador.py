@@ -3,12 +3,16 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico
+from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion
 
 porcentaje_lista_espera = 0.20
 horas_limite_cancelacion = 3
-
+mensaje_al_pasar_de_espera_a_confirmado = "Felicidades, se liberó una plaza y ya estás inscrito en el taller {taller}."
+limite_maximo_cancelaciones = 3
+horas_en_que_se_cuentan_cancelaciones = 72
+horas_que_dura_el_bloqueo = 24
 ALIAS_PADRON = 'estudiantes_db'
+
 
 class Operador: #Andrea
 
@@ -31,15 +35,21 @@ class Operador: #Andrea
 
     @staticmethod
     def promover_siguiente_en_espera(taller):
-        primero = (Inscripcion.objects
+        primero_en_espera = (Inscripcion.objects
                    .filter(taller=taller, estado='EN_ESPERA')
                    .order_by('posicion_espera').first())
-        if not primero:
+        if primero_en_espera is None:
             return None
-        primero.estado = 'CONFIRMADO'
-        primero.posicion_espera = None
-        primero.save()
-        return primero
+        primero_en_espera.estado = 'CONFIRMADO'
+        primero_en_espera.posicion_espera = None
+        primero_en_espera.save()
+
+        Notificacion.objects.create(
+            participante=primero_en_espera.participante,
+            taller=taller,
+            mensaje=mensaje_al_pasar_de_espera_a_confirmado.format(taller=taller.nombre),
+        )
+        return primero_en_espera
 
 
 
@@ -55,6 +65,7 @@ class Operador: #Andrea
     @transaction.atomic
     def registrar_inscripcion(cls, participante, taller):
         cls.verificar_que_sea_estudiante_registrado(participante)
+        cls.verificar_que_no_este_bloqueado(participante)
         cls.verificar_que_el_taller_no_haya_empezado(taller)
         cls.verificar_que_el_usuario_no_este_inscrito(participante, taller)
         cls.verificar_que_no_tenga_cruce_de_horario(participante, taller)
@@ -109,6 +120,13 @@ class Operador: #Andrea
         cls.actualizar_posiciones_lista_de_espera(taller)  # <- renumerar al final
         return promovidos
 
+    @staticmethod
+    def consultar_historial_cancelaciones(participante):
+        return (HistorialCancelacion.objects
+                .filter(participante=participante)
+                .select_related("taller")
+                .order_by("-fecha_cancelacion"))
+
     # --- MÉTODOS DE VALIDACIÓN ---
     @staticmethod
     def verificar_que_sea_estudiante_registrado(participante):
@@ -144,3 +162,29 @@ class Operador: #Andrea
         ).exists()
         if hay_cruce:
             raise ValidationError("El participante ya tiene otro taller en este horario.")
+
+    @staticmethod
+    def calcular_fin_del_bloqueo(participante):
+        # HU-09: la cancelación que supera el máximo dentro de 72 horas bloquea 24 horas desde ella.
+        # Devuelve cuándo termina el último bloqueo, o None si nunca lo tuvo.
+        fechas_de_cancelacion = list(HistorialCancelacion.objects
+                                     .filter(participante=participante)
+                                     .order_by("fecha_cancelacion")
+                                     .values_list("fecha_cancelacion", flat=True))
+        fin_del_bloqueo = None
+        for fecha_cancelacion in fechas_de_cancelacion:
+            inicio_del_periodo = fecha_cancelacion - timedelta(hours=horas_en_que_se_cuentan_cancelaciones)
+            cancelaciones_en_el_periodo = [otra_fecha for otra_fecha in fechas_de_cancelacion
+                                           if inicio_del_periodo < otra_fecha <= fecha_cancelacion]
+            if len(cancelaciones_en_el_periodo) > limite_maximo_cancelaciones:
+                fin_del_bloqueo = fecha_cancelacion + timedelta(hours=horas_que_dura_el_bloqueo)
+        return fin_del_bloqueo
+
+    @classmethod
+    def verificar_que_no_este_bloqueado(cls, participante):
+        fin_del_bloqueo = cls.calcular_fin_del_bloqueo(participante)
+        sigue_bloqueado = fin_del_bloqueo is not None and timezone.now() < fin_del_bloqueo
+        if sigue_bloqueado:
+            raise ValidationError(f"Bloqueado hasta el {fin_del_bloqueo:%d/%m %H:%M} por cancelar más de "
+                                  f"{limite_maximo_cancelaciones} veces en "
+                                  f"{horas_en_que_se_cuentan_cancelaciones} horas.")
