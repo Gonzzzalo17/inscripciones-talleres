@@ -1,10 +1,11 @@
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
-
 from .forms import TallerForm
 from .models import Inscripcion, Taller, Usuario
 from .servicios.operador import Operador
+from .servicios.coordinador import Coordinador
+
 
 
 def lista_talleres(request):
@@ -19,12 +20,21 @@ def crear_taller(request):
     if request.method == 'POST':
         form = TallerForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('lista_talleres')
+            try:
+                Coordinador.crear_taller(
+                    nombre=form.cleaned_data['nombre'],
+                    cupo_maximo=form.cleaned_data['cupo_maximo'],
+                    fecha_inicio=form.cleaned_data['fecha_inicio'],
+                    fecha_fin=form.cleaned_data['fecha_fin'],
+                )
+            except ValidationError as e:
+                error_msg = e.messages[0] if hasattr(e, 'messages') else str(e)
+                form.add_error(None, error_msg)
+            else:
+                return redirect('lista_talleres')
     else:
         form = TallerForm()
     return render(request, 'inscripciones/crear_taller.html', {'form': form})
-
 
 def solicitar_inscripcion(request, pk):
     taller = get_object_or_404(Taller, pk=pk)
