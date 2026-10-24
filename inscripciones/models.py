@@ -91,7 +91,6 @@ class Inscripcion(models.Model):
     def __str__(self):
         return f"{self.participante.username} - {self.taller} ({self.estado})"
 
-
 class HistorialCancelacion(models.Model):
     participante = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='cancelaciones')
     taller = models.ForeignKey('Taller', on_delete=models.CASCADE)
@@ -99,3 +98,14 @@ class HistorialCancelacion(models.Model):
 
     def __str__(self):
         return f"Cancelación: {self.participante.username} - {self.taller}"
+
+class Notificacion(models.Model):
+    # HU-06: mensaje que el sistema genera para el participante
+    participante = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='notificaciones')
+    taller = models.ForeignKey('Taller', on_delete=models.CASCADE)
+    mensaje = models.CharField(max_length=255)
+    fecha = models.DateTimeField(auto_now_add=True)
+    leida = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Para {self.participante.username}: {self.mensaje}"
