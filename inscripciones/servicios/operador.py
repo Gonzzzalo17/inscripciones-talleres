@@ -188,3 +188,16 @@ class Operador: #Andrea
             raise ValidationError(f"Bloqueado hasta el {fin_del_bloqueo:%d/%m %H:%M} por cancelar más de "
                                   f"{limite_maximo_cancelaciones} veces en "
                                   f"{horas_en_que_se_cuentan_cancelaciones} horas.")
+
+    @staticmethod
+    def calcular_ocupacion(taller):
+        ocupadas = taller.inscripciones.filter(estado='CONFIRMADO').count()
+        en_espera = taller.inscripciones.filter(estado='EN_ESPERA').count()
+        maximo_espera = Operador.capacidad_lista_de_espera(taller.cupo_maximo)
+        libres = max(0, taller.cupo_maximo - ocupadas)
+        return {
+            'ocupadas': ocupadas,
+            'libres': libres,
+            'en_espera': en_espera,
+            'maximo_espera': maximo_espera,
+        }
