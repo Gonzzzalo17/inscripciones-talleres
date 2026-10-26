@@ -6,9 +6,8 @@ from .models import Taller
 class TallerForm(forms.ModelForm):
     class Meta:
         model = Taller
-        fields = ['codigo', 'nombre', 'cupo_maximo', 'fecha_inicio', 'fecha_fin']
+        fields = ['nombre', 'cupo_maximo', 'fecha_inicio', 'fecha_fin']
         labels = {
-            'codigo': 'Código del taller',
             'nombre': 'Nombre del taller',
             'cupo_maximo': 'Cupo máximo',
             'fecha_inicio': 'Inicio',
@@ -25,7 +24,6 @@ class TallerForm(forms.ModelForm):
         fin = datos.get('fecha_fin')
         if inicio and fin and fin <= inicio:
             raise forms.ValidationError("La fecha de fin debe ser posterior a la de inicio.")
-        limite_maximo= inicio + timedelta(days=7)
-        if fin>limite_maximo:
+        if inicio and fin and fin > inicio + timedelta(days=7):
             raise forms.ValidationError("La duración del taller no puede superar los 7 días desde la fecha de inicio.")
         return datos
