@@ -1,13 +1,13 @@
 # MODELO (datos) — Aquí solo se definen las TABLAS de la base de datos (Taller, Inscripcion, Usuario...)
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class EstudianteEstatico(models.Model):
     codigo = models.CharField(max_length=20, primary_key=True, db_column='ci')
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
+    carrera = models.CharField(max_length=100, blank=True, null=True)  # <-- Agregamos esto
 
     class Meta:
         managed = False  # IMPORTANTE: Indica a Django que NO cree ni modifique esta tabla (es de solo lectura/estática)
@@ -66,7 +66,7 @@ class Instructor(models.Model):
 class Taller(models.Model):
     codigo = models.CharField(max_length=20, unique=True)
     nombre = models.CharField(max_length=100)
-    cupo_maximo = models.PositiveIntegerField(default=30)
+    cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(40)])
     fecha_inicio = models.DateTimeField()
     fecha_fin = models.DateTimeField()
 
@@ -91,7 +91,6 @@ class Inscripcion(models.Model):
     def __str__(self):
         return f"{self.participante.username} - {self.taller} ({self.estado})"
 
-
 class HistorialCancelacion(models.Model):
     participante = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='cancelaciones')
     taller = models.ForeignKey('Taller', on_delete=models.CASCADE)
@@ -99,3 +98,14 @@ class HistorialCancelacion(models.Model):
 
     def __str__(self):
         return f"Cancelación: {self.participante.username} - {self.taller}"
+
+class Notificacion(models.Model):
+    # HU-06: mensaje que el sistema genera para el participante
+    participante = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='notificaciones')
+    taller = models.ForeignKey('Taller', on_delete=models.CASCADE)
+    mensaje = models.CharField(max_length=255)
+    fecha = models.DateTimeField(auto_now_add=True)
+    leida = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Para {self.participante.username}: {self.mensaje}"

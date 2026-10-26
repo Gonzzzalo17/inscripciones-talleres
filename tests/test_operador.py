@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import connections
 from django.utils import timezone
 
-from inscripciones.models import HistorialCancelacion, Inscripcion, Taller, Usuario
+from inscripciones.models import HistorialCancelacion, Inscripcion, Taller, Usuario, Notificacion
 from inscripciones.servicios.operador import Operador
 
 pytestmark = pytest.mark.django_db(databases=["default", "estudiantes_db"])
@@ -159,3 +159,12 @@ def test_cancela_alguien_en_espera_y_las_posiciones_se_reordenan():
     Operador.cancelar_inscripcion(usuario(11), t)
     restante = Inscripcion.objects.get(participante=usuario(12), taller=t)
     assert restante.posicion_espera == 1
+
+def test_cancelar_avisa_felicidades_solo_al_promovido():
+    t = taller(cupo=10)
+    for i in range(1, 13):
+        solicitar(i, t)
+    Operador.cancelar_inscripcion(usuario(1), t)
+    aviso = Notificacion.objects.get()
+    assert aviso.participante == usuario(11)
+    assert aviso.taller == t
