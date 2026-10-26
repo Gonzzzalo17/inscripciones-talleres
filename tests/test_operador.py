@@ -168,3 +168,17 @@ def test_cancelar_avisa_felicidades_solo_al_promovido():
     aviso = Notificacion.objects.get()
     assert aviso.participante == usuario(11)
     assert aviso.taller == t
+
+def test_calcular_ocupacion_con_2_confirmados_1_en_espera_y_1_cancelado():
+    t = taller(cupo=2, empieza_en_horas=24)
+    for i in range(1, 4):                # 1 y 2 confirmados, 3 en espera
+        solicitar(i, t)
+    Operador.cancelar_inscripcion(usuario(1), t)   # 1 cancela y 3 pasa a confirmado
+    solicitar(4, t)                      # 4 queda en espera
+
+    ocupacion = Operador.calcular_ocupacion(t)
+
+    assert ocupacion['ocupadas'] == 2
+    assert ocupacion['libres'] == 0
+    assert ocupacion['en_espera'] == 1
+    assert ocupacion['maximo_espera'] == 1   # 20 % de 2, redondeado hacia arriba
