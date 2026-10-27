@@ -7,7 +7,7 @@ from django.utils import timezone
 from inscripciones.models import Taller
 
 PREFIJO = "TAL"
-PALABRAS_VACIAS = {"taller", "talleres", "clase", "clases", "de", "del", "la", "el", "los", "las"}
+PALABRAS_VACIAS = {"taller", "talleres", "clase", "clases", "de", "del", "la", "el", "los", "las","como","dejar","ser"}
 MAX_NOMBRE = 100
 class Coordinador:
     @staticmethod
