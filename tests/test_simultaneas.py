@@ -33,7 +33,7 @@ def conteo_lento(monkeypatch):
     def contar_despacio(consulta):
         resultado = contar(consulta)
         if consulta.model is Inscripcion:
-            time.sleep(0.3)
+            time.sleep(0.1)
         return resultado
 
     monkeypatch.setattr(QuerySet, "count", contar_despacio)
