@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion
+from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion, Taller
 
 porcentaje_lista_espera = 0.20
 horas_limite_cancelacion = 3
@@ -64,6 +64,8 @@ class Operador: #Andrea
     @classmethod
     @transaction.atomic
     def registrar_inscripcion(cls, participante, taller):
+        # no pueden tomar la misma última plaza (el segundo espera a que termine el primero).
+        taller = Taller.objects.select_for_update().get(pk=taller.pk)
         cls.verificar_que_sea_estudiante_registrado(participante)
         cls.verificar_que_no_este_bloqueado(participante)
         cls.verificar_que_el_taller_no_haya_empezado(taller)
