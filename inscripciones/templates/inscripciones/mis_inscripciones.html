@@ -1,0 +1,66 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Mis inscripciones{% endblock %}
+
+{% block contenido %}
+<h1>Mis inscripciones</h1>
+
+<div class="caja">
+    {# GET: el participante elegido viaja en la URL (?participante=<id>) #}
+    <form method="get">
+        <div class="campo">
+            <label for="participante">Participante</label>
+            <select id="participante" name="participante" required>
+                <option value="">Elige un participante</option>
+                {% for p in participantes %}
+                    <option value="{{ p.pk }}" {% if p.pk|stringformat:"s" == participante_seleccionado %}selected{% endif %}>
+                        {{ p.get_full_name|default:p.username }}{% if p.codigo %} ({{ p.codigo }}){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="boton">Ver inscripciones</button>
+    </form>
+</div>
+
+{% if participante_seleccionado %}
+    {% if inscripciones %}
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Taller</th>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th>Estado</th>
+                        <th>Posición en espera</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inscripcion in inscripciones %}
+                        <tr>
+                            <td>{{ inscripcion.taller.codigo }}</td>
+                            <td>{{ inscripcion.taller.nombre }}</td>
+                            <td>{{ inscripcion.taller.fecha_inicio|date:"d/m/Y H:i" }}</td>
+                            <td>{{ inscripcion.taller.fecha_fin|date:"d/m/Y H:i" }}</td>
+                            <td>{{ inscripcion.get_estado_display }}</td>
+                            <td>
+                                {% if inscripcion.estado == "EN_ESPERA" %}
+                                    {{ inscripcion.posicion_espera }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="vacio">Este participante no tiene inscripciones.</p>
+    {% endif %}
+{% endif %}
+
+<a class="boton secundario" href="{% url 'lista_talleres' %}">Volver a talleres</a>
+{% endblock %}
