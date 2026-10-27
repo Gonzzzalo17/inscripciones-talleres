@@ -99,6 +99,7 @@ def historial_cancelaciones(request):
     # Puedes recibir el ID del participante por GET (ej: ?participante_id=5) o usar el usuario logueado
     participante_id = request.GET.get('participante_id')
 
+    participantes = Usuario.objects.filter(rol=Usuario.Rol.PARTICIPANTE)
     participante = None
     historial = []
     fin_bloqueo = None
@@ -116,6 +117,7 @@ def historial_cancelaciones(request):
             sigue_bloqueado = True
 
     contexto = {
+        'participantes': participantes,
         'participante': participante,
         'historial': historial,
         'fin_bloqueo': fin_bloqueo,

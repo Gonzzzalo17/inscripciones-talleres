@@ -66,7 +66,7 @@ class Instructor(models.Model):
 class Taller(models.Model):
     codigo = models.CharField(max_length=20, unique=True)
     nombre = models.CharField(max_length=100)
-    cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(40)])
+    cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(4), MaxValueValidator(40)])
     fecha_inicio = models.DateTimeField()
     fecha_fin = models.DateTimeField()
 
