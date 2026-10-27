@@ -70,7 +70,32 @@ class Operador: #Andrea
         cls.verificar_que_el_usuario_no_este_inscrito(participante, taller)
         cls.verificar_que_no_tenga_cruce_de_horario(participante, taller)
 
+        inscripcion_previa = Inscripcion.objects.filter(
+            participante=participante, taller=taller, estado='CANCELADO'
+        ).first()
+
         confirmados = Inscripcion.objects.filter(taller=taller, estado='CONFIRMADO').count()
+        if confirmados < taller.cupo_maximo:
+            nuevo_estado = 'CONFIRMADO'
+            posicion = None
+        else:
+            # Validar si hay espacio en la lista de espera antes de reutilizar o crear
+            capacidad = cls.capacidad_lista_de_espera(taller.cupo_maximo)
+            en_espera_count = Inscripcion.objects.filter(taller=taller, estado='EN_ESPERA').count()
+            if en_espera_count >= capacidad:
+                raise ValidationError("El taller y la lista de espera están llenos.")
+            nuevo_estado = 'EN_ESPERA'
+            posicion = en_espera_count + 1
+
+        if inscripcion_previa:
+            # Reactivar la inscripción existente en lugar de crear una nueva
+            inscripcion_previa.estado = nuevo_estado
+            inscripcion_previa.posicion_espera = posicion
+            inscripcion_previa.save()
+            if nuevo_estado == 'EN_ESPERA':
+                cls.actualizar_posiciones_lista_de_espera(taller)
+            return inscripcion_previa
+
         if confirmados < taller.cupo_maximo:
             return Inscripcion.objects.create(participante=participante, taller=taller, estado='CONFIRMADO')
 
@@ -101,6 +126,27 @@ class Operador: #Andrea
         if era_confirmado:
             promovido = cls.promover_siguiente_en_espera(taller)
         cls.actualizar_posiciones_lista_de_espera(taller)
+
+        # --- REGLA DE BANEO  ---
+        fin_bloqueo = cls.calcular_fin_del_bloqueo(participante)
+        if fin_bloqueo and fin_bloqueo > timezone.now():
+            # 1. Si estaba en listas de espera, se le saca de todo el sistema
+            inscripciones_espera = Inscripcion.objects.filter(participante=participante, estado='EN_ESPERA')
+            for espera in inscripciones_espera:
+                taller_espera = espera.taller
+                espera.estado = 'CANCELADO'
+                espera.posicion_espera = None
+                espera.save()
+                cls.actualizar_posiciones_lista_de_espera(taller_espera)
+
+            # 2. Pierde todo lo anterior (sus talleres confirmados pasan a cancelados)
+            inscripciones_confirmadas = Inscripcion.objects.filter(participante=participante, estado='CONFIRMADO')
+            for conf in inscripciones_confirmadas:
+                taller_conf = conf.taller
+                conf.estado = 'CANCELADO'
+                conf.save()
+                # Liberar cupo y promover al siguiente en la fila de ese taller
+                cls.promover_hasta_llenar(taller_conf)
         return inscripcion, promovido  # <- ahora devuelve ambos
 
     @classmethod

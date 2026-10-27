@@ -5,7 +5,7 @@ from .forms import TallerForm
 from .models import Inscripcion, Taller, Usuario
 from .servicios.operador import Operador
 from .servicios.coordinador import Coordinador
-
+from django.utils import timezone
 
 
 def lista_talleres(request):
@@ -89,3 +89,37 @@ def mis_inscripciones(request):
         'participante_seleccionado': participante_seleccionado,
     }
     return render(request, 'inscripciones/mis_inscripciones.html', contexto)
+
+
+def historial_cancelaciones(request):
+    """
+    Vista para consultar el historial de cancelaciones de un participante
+    y verificar si se encuentra bloqueado (baneado) actualmente.
+    """
+    # Puedes recibir el ID del participante por GET (ej: ?participante_id=5) o usar el usuario logueado
+    participante_id = request.GET.get('participante_id')
+
+    participante = None
+    historial = []
+    fin_bloqueo = None
+    sigue_bloqueado = False
+
+    if participante_id:
+        participante = get_object_or_404(Usuario, pk=participante_id, rol=Usuario.Rol.PARTICIPANTE)
+
+        # 1. Obtener historial usando el método del Operador
+        historial = Operador.consultar_historial_cancelaciones(participante)
+
+        # 2. Calcular si está bloqueado y cuándo termina
+        fin_bloqueo = Operador.calcular_fin_del_bloqueo(participante)
+        if fin_bloqueo and fin_bloqueo > timezone.now():
+            sigue_bloqueado = True
+
+    contexto = {
+        'participante': participante,
+        'historial': historial,
+        'fin_bloqueo': fin_bloqueo,
+        'sigue_bloqueado': sigue_bloqueado,
+    }
+
+    return render(request, 'inscripciones/historial_cancelaciones.html', contexto)
