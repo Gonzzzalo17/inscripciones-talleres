@@ -78,11 +78,18 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        # TAL-RC-01: cada transacción toma el turno de escritura al empezar; si llegan
+        # dos pedidos a la vez, el segundo espera (hasta 20 s) en vez de dar error.
+        'OPTIONS': {'transaction_mode': 'IMMEDIATE', 'timeout': 20},
+        # Base de pruebas en archivo (no en memoria) para poder simular pedidos a la vez.
+        'TEST': {'NAME': BASE_DIR / 'test_db.sqlite3'},
     },
     # 2. Base de datos estática de estudiantes
     'estudiantes_db': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'estudiantes_estatica.sqlite3',  # O PostgreSQL/MySQL según donde esté
+        'NAME': BASE_DIR / 'estudiantes_estatica.sqlite3',
+        'OPTIONS': {'transaction_mode': 'IMMEDIATE', 'timeout': 20},
+        'TEST': {'NAME': BASE_DIR / 'test_estudiantes.sqlite3'},
     }
 }
 
