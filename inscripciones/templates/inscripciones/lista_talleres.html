@@ -31,7 +31,10 @@
                             {% if taller.ocupadas >= taller.cupo_maximo %}<span class="lleno">(lleno)</span>{% endif %}
                         </td>
                         <td>{{ taller.en_espera }}</td>
-                        <td><a class="boton secundario" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a></td>
+                        <td>
+                            <a class="boton secundario" href="{% url 'ocupacion_taller' taller.pk %}">Ver ocupación</a>
+                            <a class="boton secundario" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
