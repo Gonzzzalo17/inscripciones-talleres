@@ -3,7 +3,8 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion
+from django.db.models import Q
+from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion, Taller
 
 porcentaje_lista_espera = 0.20
 horas_limite_cancelacion = 3
@@ -64,6 +65,8 @@ class Operador: #Andrea
     @classmethod
     @transaction.atomic
     def registrar_inscripcion(cls, participante, taller):
+        # no pueden tomar la misma última plaza (el segundo espera a que termine el primero).
+        taller = Taller.objects.select_for_update().get(pk=taller.pk)
         cls.verificar_que_sea_estudiante_registrado(participante)
         cls.verificar_que_no_este_bloqueado(participante)
         cls.verificar_que_el_taller_no_haya_empezado(taller)
@@ -172,6 +175,23 @@ class Operador: #Andrea
                 .filter(participante=participante)
                 .select_related("taller")
                 .order_by("-fecha_cancelacion"))
+
+    @staticmethod
+    def buscar_inscripciones(texto):
+        # HU-11 / CU-16: el operador busca inscripciones escribiendo un código,
+        # nombre o apellido del participante, o el código o nombre del taller.
+        texto = (texto or "").strip()
+        if not texto:
+            return Inscripcion.objects.none()
+        coincide = (Q(participante__codigo__icontains=texto)
+                    | Q(participante__username__icontains=texto)
+                    | Q(participante__first_name__icontains=texto)
+                    | Q(participante__last_name__icontains=texto)
+                    | Q(taller__codigo__icontains=texto)
+                    | Q(taller__nombre__icontains=texto))
+        return (Inscripcion.objects.filter(coincide)
+                .select_related("participante", "taller")
+                .order_by("taller__fecha_inicio", "participante__last_name"))
 
     # --- MÉTODOS DE VALIDACIÓN ---
     @staticmethod

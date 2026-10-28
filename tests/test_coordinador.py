@@ -59,10 +59,33 @@ def test_editar_cambia_nombre_y_cupo():
     taller = editar_taller_para_pasado_manana(crear_taller_que_empieza_manana(), "Ballet", 20)
     assert (taller.nombre, taller.cupo_maximo) == ("Ballet", 20)
 
-def test_rechaza_bajar_el_cupo():
+def test_bajar_el_cupo_solo_hasta_los_confirmados_sin_mover_a_nadie():
     taller = crear_taller_que_empieza_manana(cupo=10)
+    for _ in range(3):
+        inscribir_participante(taller, "CONFIRMADO")
+    inscribir_participante(taller, "EN_ESPERA", posicion_espera=1)
+
     with pytest.raises(ValidationError):
-        editar_taller_para_pasado_manana(taller, "Danza", 5)
+        editar_taller_para_pasado_manana(taller, "Danza", 2)    # menos que los 3 confirmados
+    editar_taller_para_pasado_manana(taller, "Danza", 3)        # igual a los confirmados: se permite
+
+    taller.refresh_from_db()
+    assert taller.cupo_maximo == 3
+    assert taller.inscripciones.filter(estado="CONFIRMADO").count() == 3
+    assert taller.inscripciones.filter(estado="EN_ESPERA").count() == 1
+
+def test_editar_subiendo_el_cupo_confirma_a_la_espera_en_orden():
+    taller = crear_taller_que_empieza_manana(cupo=1)
+    inscribir_participante(taller, "CONFIRMADO")
+    primero_en_espera = inscribir_participante(taller, "EN_ESPERA", posicion_espera=1)
+    segundo_en_espera = inscribir_participante(taller, "EN_ESPERA", posicion_espera=2)
+
+    editar_taller_para_pasado_manana(taller, "Danza", 2)
+
+    primero_en_espera.refresh_from_db()
+    segundo_en_espera.refresh_from_db()
+    assert primero_en_espera.estado == "CONFIRMADO"
+    assert (segundo_en_espera.estado, segundo_en_espera.posicion_espera) == ("EN_ESPERA", 1)
 
 def test_rechaza_editar_un_taller_que_ya_empezo():
     taller_empezado = Taller.objects.create(codigo="TAL-DAN-01", nombre="Danza", cupo_maximo=10,

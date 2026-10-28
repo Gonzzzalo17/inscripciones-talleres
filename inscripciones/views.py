@@ -125,3 +125,12 @@ def historial_cancelaciones(request):
     }
 
     return render(request, 'inscripciones/historial_cancelaciones.html', contexto)
+
+def ocupacion_taller(request, pk):
+    # HU-07: consultar la ocupación de un taller (solo lectura, no cambia datos)
+    taller = get_object_or_404(Taller, pk=pk)
+    ocupacion = Operador.calcular_ocupacion(taller)
+    return render(request, 'inscripciones/ocupacion_taller.html', {
+        'taller': taller,
+        'ocupacion': ocupacion,
+    })

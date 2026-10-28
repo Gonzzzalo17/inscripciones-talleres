@@ -1,0 +1,47 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Ocupación de {{ taller.nombre }}{% endblock %}
+
+{% block contenido %}
+<h1>Ocupación de {{ taller.nombre }}</h1>
+
+<div class="caja">
+    <dl class="datos">
+        <dt>Código</dt>
+        <dd>{{ taller.codigo }}</dd>
+        <dt>Inicio</dt>
+        <dd>{{ taller.fecha_inicio|date:"d/m/Y H:i" }}</dd>
+        <dt>Fin</dt>
+        <dd>{{ taller.fecha_fin|date:"d/m/Y H:i" }}</dd>
+    </dl>
+</div>
+
+<div class="tabla-contenedor">
+    <table>
+        <thead>
+            <tr>
+                <th>Cupo máximo</th>
+                <th>Plazas ocupadas</th>
+                <th>Plazas libres</th>
+                <th>Lista de espera</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ taller.cupo_maximo }}</td>
+                <td>{{ ocupacion.ocupadas }}</td>
+                <td>
+                    {{ ocupacion.libres }}
+                    {% if ocupacion.libres == 0 %}<span class="lleno">(lleno)</span>{% endif %}
+                </td>
+                <td>{{ ocupacion.en_espera }} de {{ ocupacion.maximo_espera }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<p style="margin-top: 1.5rem;">
+    <a class="boton" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a>
+    <a class="boton secundario" href="{% url 'lista_talleres' %}">Volver a talleres</a>
+</p>
+{% endblock %}
