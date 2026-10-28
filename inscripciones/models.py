@@ -109,3 +109,15 @@ class Notificacion(models.Model):
 
     def __str__(self):
         return f"Para {self.participante.username}: {self.mensaje}"
+class TallerHistorial(models.Model):
+    taller = models.ForeignKey(Taller, on_delete=models.CASCADE, related_name='historial_cambios')
+    fecha_modificacion = models.DateTimeField(auto_now_add=True)
+    motivo = models.CharField(max_length=255)
+    codigo_anterior = models.CharField(max_length=20)
+    nombre_anterior = models.CharField(max_length=100)
+    cupo_maximo_anterior = models.PositiveIntegerField()
+    fecha_inicio_anterior = models.DateTimeField()
+    fecha_fin_anterior = models.DateTimeField()
+
+    def __str__(self):
+        return f"Edición de {self.taller.nombre} - {self.fecha_modificacion:%Y-%m-%d %H:%M}"
