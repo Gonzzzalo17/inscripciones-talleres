@@ -182,3 +182,35 @@ def test_calcular_ocupacion_con_2_confirmados_1_en_espera_y_1_cancelado():
     assert ocupacion['libres'] == 0
     assert ocupacion['en_espera'] == 1
     assert ocupacion['maximo_espera'] == 1   # 20 % de 2, redondeado hacia arriba
+
+def test_buscar_por_codigo_de_taller_trae_solo_las_de_ese_taller():
+    danza = taller(codigo="DAN-BUS-01", cupo=5, empieza_en_horas=5)
+    pintura = taller(codigo="PIN-BUS-01", cupo=5, empieza_en_horas=10)
+    solicitar(1, danza)
+    solicitar(2, danza)
+    solicitar(3, pintura)
+
+    encontradas = Operador.buscar_inscripciones("DAN-BUS")
+
+    assert {inscripcion.taller for inscripcion in encontradas} == {danza}
+    assert encontradas.count() == 2
+
+def test_buscar_por_codigo_de_participante_trae_todas_sus_inscripciones():
+    danza = taller(codigo="DAN-BUS-01", cupo=5, empieza_en_horas=5)
+    pintura = taller(codigo="PIN-BUS-01", cupo=5, empieza_en_horas=10)
+    solicitar(1, danza)
+    solicitar(1, pintura)
+    solicitar(2, danza)
+
+    encontradas = Operador.buscar_inscripciones(usuario(1).codigo)
+
+    assert {inscripcion.participante for inscripcion in encontradas} == {usuario(1)}
+    assert {inscripcion.taller for inscripcion in encontradas} == {danza, pintura}
+
+def test_buscar_sin_texto_no_trae_nada_y_no_cambia_datos():
+    danza = taller(codigo="DAN-BUS-01", cupo=5)
+    solicitar(1, danza)
+
+    assert Operador.buscar_inscripciones("").count() == 0
+    assert Operador.buscar_inscripciones("   ").count() == 0
+    assert estado(1, danza) == "CONFIRMADO"
