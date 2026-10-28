@@ -1,12 +1,38 @@
-from inscripciones.models import Inscripcion
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.db.models import Q
+from inscripciones.models import EstudianteEstatico, Inscripcion, Usuario
+from inscripciones.servicios.operador import ALIAS_PADRON
 
 class Participante:
 
     @staticmethod
     def consultar_mis_inscripciones(participante):
-        # HU-08 / CU-11: todas las inscripciones del participante con su taller,
+        # todas las inscripciones del participante con su taller,
         # estado y posición en espera, de la más próxima a la más lejana.
         return (Inscripcion.objects
                 .filter(participante=participante)
                 .select_related("taller")
                 .order_by("taller__fecha_inicio"))
+
+    @staticmethod
+    def registrar_cuenta(codigo, contrasena):
+        # crea la cuenta del estudiante con su código universitario.
+        # El nombre completo se toma de la base de la universidad.
+        estudiante = (EstudianteEstatico.objects.using(ALIAS_PADRON)
+                      .only("codigo", "nombre", "apellido")
+                      .filter(codigo=codigo).first())
+        if estudiante is None:
+            raise ValidationError(f"El código {codigo} no figura en la lista de estudiantes de la universidad.")
+
+        if Usuario.objects.filter(Q(codigo=codigo) | Q(username=codigo)).exists():
+            raise ValidationError(f"El código {codigo} ya tiene una cuenta. Ingresa con tu contraseña.")
+
+        nuevo = Usuario(username=codigo, codigo=codigo, rol=Usuario.Rol.PARTICIPANTE,
+                        first_name=estudiante.nombre, last_name=estudiante.apellido)
+        # Reglas de Django: mínimo 8 caracteres, no muy común, no solo números
+        # y que no se parezca al código ni al nombre.
+        validate_password(contrasena, user=nuevo)
+        nuevo.set_password(contrasena)  # se guarda cifrada, nunca en texto plano
+        nuevo.save()
+        return nuevo

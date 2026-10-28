@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from inscripciones.models import Taller
+from inscripciones.servicios.operador import Operador
 
 PREFIJO = "TAL"
 PALABRAS_VACIAS = {"taller", "talleres", "clase", "clases", "de", "del", "la", "el", "los", "las","como","dejar","ser"}
@@ -70,9 +71,13 @@ class Coordinador:
             raise ValidationError(f"El nombre no puede superar {MAX_NOMBRE} caracteres.")
         if cupo_maximo <= 0:
             raise ValidationError("El cupo debe ser mayor que cero.")
-        if cupo_maximo < taller.cupo_maximo:
+        # se puede bajar el cupo, pero nunca por debajo de los que ya están
+        # hasta la cantidad de confirmados (así nadie pierde su plaza ni pasa a la lista de espera).
+        confirmados = taller.inscripciones.filter(estado="CONFIRMADO").count()
+        if cupo_maximo < confirmados:
             raise ValidationError(
-                f"El cupo solo puede aumentar (actual: {taller.cupo_maximo}).")
+                f"No se puede bajar el cupo a {cupo_maximo}: ya hay {confirmados} participantes confirmados.")
+
         if fecha_inicio < ahora:
             raise ValidationError("La fecha de inicio no puede ser anterior a la actual.")
         if fecha_fin <= fecha_inicio:
@@ -83,4 +88,5 @@ class Coordinador:
         taller.fecha_inicio = fecha_inicio
         taller.fecha_fin = fecha_fin
         taller.save(update_fields=["nombre", "cupo_maximo", "fecha_inicio", "fecha_fin"])
+        Operador.promover_hasta_llenar(taller)
         return taller
