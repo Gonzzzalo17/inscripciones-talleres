@@ -16,6 +16,7 @@
                     <th>Fin</th>
                     <th>Plazas ocupadas</th>
                     <th>En espera</th>
+                    <th>Estado</th>
                     <th></th>
                 </tr>
             </thead>
@@ -31,9 +32,23 @@
                             {% if taller.ocupadas >= taller.cupo_maximo %}<span class="lleno">(lleno)</span>{% endif %}
                         </td>
                         <td>{{ taller.en_espera }}</td>
+                        <td>{% if taller.cancelado %}Cancelado{% else %}{{ taller.get_estado_display }}{% endif %}</td>
                         <td>
                             <a class="boton secundario" href="{% url 'ocupacion_taller' taller.pk %}">Ver ocupación</a>
-                            <a class="boton secundario" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a>
+                            {# Solo se puede pedir plaza en un taller aprobado y no cancelado #}
+                            {% if taller.estado == "APROBADO" and not taller.cancelado %}
+                                {% if user.rol == "PARTICIPANTE" or user.rol == "OPERADOR" %}
+                                    <a class="boton secundario" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a>
+                                {% endif %}
+                            {% endif %}
+                            {# El operador decide los talleres que pidió un coordinador #}
+                            {% if user.rol == "OPERADOR" and taller.estado == "PENDIENTE" and not taller.cancelado %}
+                                <form method="post" action="{% url 'decidir_taller' taller.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" name="decision" value="aprobar" class="boton">Aprobar</button>
+                                    <button type="submit" name="decision" value="rechazar" class="boton secundario">Rechazar</button>
+                                </form>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -41,7 +56,9 @@
         </table>
     </div>
 {% else %}
-    <p class="vacio">No hay talleres creados todavía.</p>
-    <a class="boton" href="{% url 'crear_taller' %}">Crear el primer taller</a>
+    <p class="vacio">No hay talleres disponibles todavía.</p>
+    {% if user.rol == "COORDINADOR" or user.rol == "OPERADOR" %}
+        <a class="boton" href="{% url 'crear_taller' %}">Crear el primer taller</a>
+    {% endif %}
 {% endif %}
 {% endblock %}
