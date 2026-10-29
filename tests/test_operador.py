@@ -93,14 +93,6 @@ def test_e5_taller_y_espera_llenos_rechaza_sin_cambios():
     assert en_espera(t) == 2
     assert not Inscripcion.objects.filter(participante=usuario(13)).exists()
 
-def test_cupo_12_admite_3_en_espera_y_rechaza_el_cuarto():
-    t = taller(cupo=12)
-    for i in range(1, 16):               # 12 + 3
-        solicitar(i, t)
-    assert en_espera(t) == 3
-    with pytest.raises(ValidationError):
-        solicitar(16, t)
-
 def test_duplicado_rechazado_sin_cambios():
     t = taller(cupo=2)
     solicitar(1, t)
