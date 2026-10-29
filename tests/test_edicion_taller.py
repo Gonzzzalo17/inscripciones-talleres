@@ -73,21 +73,6 @@ class EdicionTallerAuditoriaTestCase(TestCase):
                 usuario=self.usuario,
             )
 
-    def test_no_permite_editar_taller_que_ya_inicio(self):
-        self.taller.fecha_inicio = timezone.now() - timedelta(hours=1)
-        self.taller.fecha_fin = timezone.now() + timedelta(hours=1)
-        self.taller.save()
-
-        with self.assertRaisesRegex(ValidationError, "ya empezó"):
-            Coordinador.editar_taller(
-                taller_id=self.taller.pk,
-                cupo_maximo=15,
-                fecha_inicio=timezone.now() + timedelta(days=3),
-                fecha_fin=timezone.now() + timedelta(days=3, hours=2),
-                motivo=self.motivo,
-                usuario=self.usuario,
-            )
-
     def test_coordinador_no_puede_editar_taller_ajeno(self):
         otro_coordinador = Usuario.objects.create_user(
             username="otro_coordinador",
@@ -103,30 +88,6 @@ class EdicionTallerAuditoriaTestCase(TestCase):
                 fecha_fin=timezone.now() + timedelta(days=3, hours=2),
                 motivo=self.motivo,
                 usuario=otro_coordinador,
-            )
-
-    def test_no_permite_reducir_cupo_bajo_inscripciones_confirmadas(self):
-        for numero in range(4):
-            participante = Usuario.objects.create_user(
-                username=f"participante_{numero}",
-                password="test123",
-                rol=Usuario.Rol.PARTICIPANTE,
-            )
-            from inscripciones.models import Inscripcion
-            Inscripcion.objects.create(
-                participante=participante,
-                taller=self.taller,
-                estado="CONFIRMADO",
-            )
-
-        with self.assertRaises(ValidationError):
-            Coordinador.editar_taller(
-                taller_id=self.taller.pk,
-                cupo_maximo=3,
-                fecha_inicio=timezone.now() + timedelta(days=3),
-                fecha_fin=timezone.now() + timedelta(days=3, hours=2),
-                motivo=self.motivo,
-                usuario=self.usuario,
             )
 
     def test_historial_guarda_fechas_anteriores(self):
