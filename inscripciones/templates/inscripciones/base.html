@@ -110,6 +110,10 @@
     </header>
 
     <main>
+        {# Mensajes de un solo uso (ej: "Se canceló la inscripción...") #}
+        {% for mensaje in messages %}
+            <div class="aviso {% if mensaje.level_tag == 'error' %}rechazo{% elif mensaje.level_tag == 'warning' %}espera{% else %}confirmado{% endif %}">{{ mensaje }}</div>
+        {% endfor %}
         {% block contenido %}{% endblock %}
     </main>
 </body>
