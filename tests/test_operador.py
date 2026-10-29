@@ -214,3 +214,47 @@ def test_buscar_sin_texto_no_trae_nada_y_no_cambia_datos():
     assert Operador.buscar_inscripciones("").count() == 0
     assert Operador.buscar_inscripciones("   ").count() == 0
     assert estado(1, danza) == "CONFIRMADO"
+
+# el operador acepta o rechaza los talleres que piden los coordinadores
+
+def operador_del_sistema():
+    return Usuario.objects.create(username="operador", rol=Usuario.Rol.OPERADOR)
+
+
+def test_operador_aprueba_un_taller_pendiente_y_recien_ahi_acepta_inscripciones():
+    pintura = taller(codigo="PIN-APR-01", cupo=5)
+    pintura.estado = Taller.Estado.PENDIENTE
+    pintura.save()
+    with pytest.raises(ValidationError):
+        solicitar(1, pintura)                      # pendiente: no se puede inscribir
+
+    Operador.aprobar_taller(operador_del_sistema(), pintura)
+    solicitar(1, pintura)
+
+    assert estado(1, pintura) == "CONFIRMADO"
+
+
+def test_taller_rechazado_no_acepta_inscripciones():
+    pintura = taller(codigo="PIN-REC-01", cupo=5)
+    pintura.estado = Taller.Estado.PENDIENTE
+    pintura.save()
+
+    Operador.rechazar_taller(operador_del_sistema(), pintura)
+
+    pintura.refresh_from_db()
+    assert pintura.estado == Taller.Estado.RECHAZADO
+    with pytest.raises(ValidationError):
+        solicitar(1, pintura)
+
+
+def test_solo_el_operador_decide_y_solo_sobre_talleres_pendientes():
+    coordinadora = Usuario.objects.create(username="coordinadora", rol=Usuario.Rol.COORDINADOR)
+    pintura = taller(codigo="PIN-DEC-01", cupo=5)
+    pintura.estado = Taller.Estado.PENDIENTE
+    pintura.save()
+
+    with pytest.raises(ValidationError):
+        Operador.aprobar_taller(coordinadora, pintura)       # no es operadora
+    Operador.aprobar_taller(operador_del_sistema(), pintura)
+    with pytest.raises(ValidationError):
+        Operador.rechazar_taller(Usuario.objects.get(username="operador"), pintura)  # ya no está pendiente

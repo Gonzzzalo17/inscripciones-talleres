@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
 from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion, Taller
+from inscripciones.servicios.permisos import verificar_que_sea_operador
 
 porcentaje_lista_espera = 0.20
 horas_limite_cancelacion = 3
@@ -69,6 +70,7 @@ class Operador: #Andrea
         taller = Taller.objects.select_for_update().get(pk=taller.pk)
         cls.verificar_que_sea_estudiante_registrado(participante)
         cls.verificar_que_no_este_bloqueado(participante)
+        cls.verificar_que_el_taller_este_aprobado(taller)
         cls.verificar_que_el_taller_no_haya_empezado(taller)
         cls.verificar_que_el_usuario_no_este_inscrito(participante, taller)
         cls.verificar_que_no_tenga_cruce_de_horario(participante, taller)
@@ -150,7 +152,7 @@ class Operador: #Andrea
                 conf.save()
                 # Liberar cupo y promover al siguiente en la fila de ese taller
                 cls.promover_hasta_llenar(taller_conf)
-        return inscripcion, promovido  # <- ahora devuelve ambos
+        return inscripcion, promovido
 
     @classmethod
     @transaction.atomic
@@ -178,7 +180,7 @@ class Operador: #Andrea
 
     @staticmethod
     def buscar_inscripciones(texto):
-        # HU-11 / CU-16: el operador busca inscripciones escribiendo un código,
+        # el operador busca inscripciones escribiendo un código,
         # nombre o apellido del participante, o el código o nombre del taller.
         texto = (texto or "").strip()
         if not texto:
@@ -193,7 +195,35 @@ class Operador: #Andrea
                 .select_related("participante", "taller")
                 .order_by("taller__fecha_inicio", "participante__last_name"))
 
+    @staticmethod
+    @transaction.atomic
+    def aprobar_taller(operador, taller):
+        # el operador acepta un taller que pidió un coordinador.
+        return Operador.decidir_solicitud_de_taller(operador, taller, Taller.Estado.APROBADO)
+
+    @staticmethod
+    @transaction.atomic
+    def rechazar_taller(operador, taller):
+        # el operador rechaza el taller; el coordinador lo puede corregir y volver a enviar.
+        return Operador.decidir_solicitud_de_taller(operador, taller, Taller.Estado.RECHAZADO)
+
+    @staticmethod
+    def decidir_solicitud_de_taller(operador, taller, nuevo_estado):
+        verificar_que_sea_operador(operador)
+        taller = Taller.objects.select_for_update().get(pk=taller.pk)
+        if taller.estado != Taller.Estado.PENDIENTE:
+            raise ValidationError("Solo se puede aceptar o rechazar un taller que está pendiente.")
+        taller.estado = nuevo_estado
+        taller.save(update_fields=["estado"])
+        return taller
+
     # --- MÉTODOS DE VALIDACIÓN ---
+
+    @staticmethod
+    def verificar_que_el_taller_este_aprobado(taller):
+        if taller.estado != Taller.Estado.APROBADO:
+            raise ValidationError("El taller todavía no fue aprobado por el operador.")
+
     @staticmethod
     def verificar_que_sea_estudiante_registrado(participante):
         """
