@@ -1,0 +1,51 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Buscar inscripciones{% endblock %}
+
+{% block contenido %}
+<h1>Buscar inscripciones</h1>
+
+<div class="caja">
+    {# GET: lo que se busca viaja en la URL (?q=...) #}
+    <form method="get">
+        <div class="campo">
+            <label for="q">Participante o taller</label>
+            <input id="q" name="q" type="text" value="{{ texto }}" placeholder="Código, nombre o apellido del participante, o código o nombre del taller" required>
+        </div>
+        <button type="submit" class="boton">Buscar</button>
+    </form>
+</div>
+
+{% if texto %}
+    {% if resultados %}
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Participante</th>
+                        <th>Código</th>
+                        <th>Taller</th>
+                        <th>Inicio</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inscripcion in resultados %}
+                        <tr>
+                            <td>{{ inscripcion.participante.get_full_name|default:inscripcion.participante.username }}</td>
+                            <td>{{ inscripcion.participante.codigo }}</td>
+                            <td>{{ inscripcion.taller.nombre }} ({{ inscripcion.taller.codigo }})</td>
+                            <td>{{ inscripcion.taller.fecha_inicio|date:"d/m/Y H:i" }}</td>
+                            <td>{{ inscripcion.get_estado_display }}</td>
+                            <td><a class="boton secundario" href="{% url 'mis_inscripciones' %}?participante={{ inscripcion.participante.pk }}">Ver sus inscripciones</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="vacio">No se encontraron inscripciones para "{{ texto }}".</p>
+    {% endif %}
+{% endif %}
+{% endblock %}

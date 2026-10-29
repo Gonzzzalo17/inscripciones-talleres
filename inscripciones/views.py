@@ -277,3 +277,13 @@ def cancelar_inscripcion(request, pk):
     if request.user.rol == Usuario.Rol.OPERADOR:
         return redirect(f"/mis-inscripciones/?participante={participante.pk}")
     return redirect('mis_inscripciones')
+
+
+@solo_para(Usuario.Rol.OPERADOR)
+def buscar_inscripciones(request):
+    # Gantt 72-73: el operador busca inscripciones por participante (código, nombre)
+    # o por taller (código, nombre)
+    texto = request.GET.get('q', '').strip()
+    resultados = Operador.buscar_inscripciones(texto) if texto else []
+    return render(request, 'inscripciones/buscar_inscripciones.html',
+                  {'texto': texto, 'resultados': resultados})
