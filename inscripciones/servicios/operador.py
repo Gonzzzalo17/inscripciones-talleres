@@ -5,17 +5,29 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
 from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion, Taller
+from inscripciones.servicios.permisos import verificar_que_pueda_manejar_el_taller, verificar_que_sea_operador
+from inscripciones.servicios.notificaciones import notificar
 
 porcentaje_lista_espera = 0.20
 horas_limite_cancelacion = 3
+
 mensaje_al_pasar_de_espera_a_confirmado = "Felicidades, se liberó una plaza y ya estás inscrito en el taller {taller}."
+mensaje_inscripcion_confirmada = "Quedaste inscrito en el taller {taller}."
+mensaje_inscripcion_en_espera = "Estás en la lista de espera del taller {taller}, en la posición {posicion}."
+mensaje_inscripcion_cancelada = "Cancelaste tu inscripción en el taller {taller}."
+mensaje_bloqueo = ("Quedaste bloqueado hasta el {fin:%d/%m %H:%M} por cancelar más de {limite} veces "
+                   "en {horas} horas. Perdiste tus inscripciones y saliste de las listas de espera.")
+mensaje_taller_aprobado = "Tu taller {taller} fue aprobado y ya recibe inscripciones."
+mensaje_taller_rechazado = "Tu taller {taller} fue rechazado. Puedes corregirlo y volver a enviarlo."
+mensaje_taller_cancelado = "El taller {taller} fue cancelado. Tu inscripción quedó anulada."
+
 limite_maximo_cancelaciones = 3
 horas_en_que_se_cuentan_cancelaciones = 72
 horas_que_dura_el_bloqueo = 24
 ALIAS_PADRON = 'estudiantes_db'
 
 
-class Operador: #Andrea
+class Operador:
 
     @staticmethod
     def capacidad_lista_de_espera(cupo_maximo):
@@ -45,14 +57,9 @@ class Operador: #Andrea
         primero_en_espera.posicion_espera = None
         primero_en_espera.save()
 
-        Notificacion.objects.create(
-            participante=primero_en_espera.participante,
-            taller=taller,
-            mensaje=mensaje_al_pasar_de_espera_a_confirmado.format(taller=taller.nombre),
-        )
+        notificar(primero_en_espera.participante, taller,
+                  mensaje_al_pasar_de_espera_a_confirmado.format(taller=taller.nombre))
         return primero_en_espera
-
-
 
     @staticmethod
     def actualizar_posiciones_lista_de_espera(taller):
@@ -69,6 +76,8 @@ class Operador: #Andrea
         taller = Taller.objects.select_for_update().get(pk=taller.pk)
         cls.verificar_que_sea_estudiante_registrado(participante)
         cls.verificar_que_no_este_bloqueado(participante)
+        cls.verificar_que_el_taller_no_este_cancelado(taller)
+        cls.verificar_que_el_taller_este_aprobado(taller)
         cls.verificar_que_el_taller_no_haya_empezado(taller)
         cls.verificar_que_el_usuario_no_este_inscrito(participante, taller)
         cls.verificar_que_no_tenga_cruce_de_horario(participante, taller)
@@ -97,12 +106,25 @@ class Operador: #Andrea
             inscripcion_previa.save()
             if nuevo_estado == 'EN_ESPERA':
                 cls.actualizar_posiciones_lista_de_espera(taller)
-            return inscripcion_previa
+            inscripcion = inscripcion_previa
+        elif confirmados < taller.cupo_maximo:
+            inscripcion = Inscripcion.objects.create(participante=participante, taller=taller, estado='CONFIRMADO')
+        else:
+            inscripcion = cls.agregar_a_lista_de_espera(participante, taller)
 
-        if confirmados < taller.cupo_maximo:
-            return Inscripcion.objects.create(participante=participante, taller=taller, estado='CONFIRMADO')
+        cls.avisar_resultado_de_la_inscripcion(inscripcion)
+        return inscripcion
 
-        return cls.agregar_a_lista_de_espera(participante, taller)
+    @staticmethod
+    def avisar_resultado_de_la_inscripcion(inscripcion):
+        # el participante recibe un aviso diciendo si quedó confirmado o en espera.
+        inscripcion.refresh_from_db()
+        if inscripcion.estado == 'CONFIRMADO':
+            mensaje = mensaje_inscripcion_confirmada.format(taller=inscripcion.taller.nombre)
+        else:
+            mensaje = mensaje_inscripcion_en_espera.format(taller=inscripcion.taller.nombre,
+                                                           posicion=inscripcion.posicion_espera)
+        notificar(inscripcion.participante, inscripcion.taller, mensaje)
 
     @classmethod
     @transaction.atomic
@@ -124,6 +146,7 @@ class Operador: #Andrea
         inscripcion.save()
 
         HistorialCancelacion.objects.create(participante=participante, taller=taller)
+        notificar(participante, taller, mensaje_inscripcion_cancelada.format(taller=taller.nombre))
 
         promovido = None
         if era_confirmado:
@@ -133,6 +156,9 @@ class Operador: #Andrea
         # --- REGLA DE BANEO  ---
         fin_bloqueo = cls.calcular_fin_del_bloqueo(participante)
         if fin_bloqueo and fin_bloqueo > timezone.now():
+            notificar(participante, taller, mensaje_bloqueo.format(
+                fin=fin_bloqueo, limite=limite_maximo_cancelaciones,
+                horas=horas_en_que_se_cuentan_cancelaciones))
             # 1. Si estaba en listas de espera, se le saca de todo el sistema
             inscripciones_espera = Inscripcion.objects.filter(participante=participante, estado='EN_ESPERA')
             for espera in inscripciones_espera:
@@ -150,7 +176,7 @@ class Operador: #Andrea
                 conf.save()
                 # Liberar cupo y promover al siguiente en la fila de ese taller
                 cls.promover_hasta_llenar(taller_conf)
-        return inscripcion, promovido  # <- ahora devuelve ambos
+        return inscripcion, promovido
 
     @classmethod
     @transaction.atomic
@@ -178,7 +204,7 @@ class Operador: #Andrea
 
     @staticmethod
     def buscar_inscripciones(texto):
-        # HU-11 / CU-16: el operador busca inscripciones escribiendo un código,
+        # el operador busca inscripciones escribiendo un código,
         # nombre o apellido del participante, o el código o nombre del taller.
         texto = (texto or "").strip()
         if not texto:
@@ -193,7 +219,65 @@ class Operador: #Andrea
                 .select_related("participante", "taller")
                 .order_by("taller__fecha_inicio", "participante__last_name"))
 
+    @staticmethod
+    @transaction.atomic
+    def aprobar_taller(operador, taller):
+        # el operador acepta un taller que pidió un coordinador.
+        return Operador.decidir_solicitud_de_taller(operador, taller, Taller.Estado.APROBADO)
+
+    @staticmethod
+    @transaction.atomic
+    def rechazar_taller(operador, taller):
+        # el operador rechaza el taller; el coordinador lo puede corregir y volver a enviar.
+        return Operador.decidir_solicitud_de_taller(operador, taller, Taller.Estado.RECHAZADO)
+
+    @staticmethod
+    def decidir_solicitud_de_taller(operador, taller, nuevo_estado):
+        verificar_que_sea_operador(operador)
+        taller = Taller.objects.select_for_update().get(pk=taller.pk)
+        if taller.estado != Taller.Estado.PENDIENTE:
+            raise ValidationError("Solo se puede aceptar o rechazar un taller que está pendiente.")
+        taller.estado = nuevo_estado
+        taller.save(update_fields=["estado"])
+        if taller.coordinador is not None:
+            mensaje = mensaje_taller_aprobado if nuevo_estado == Taller.Estado.APROBADO else mensaje_taller_rechazado
+            notificar(taller.coordinador, taller, mensaje.format(taller=taller.nombre))
+        return taller
+
+    @staticmethod
+    @transaction.atomic
+    def cancelar_taller(usuario, taller):
+        # el operador cancela cualquier taller y el coordinador solo los suyos.
+        # Todos los inscritos y los de la lista de espera quedan cancelados y
+        # reciben un aviso. No se guarda en HistorialCancelacion: no cuenta para el bloqueo.
+        verificar_que_pueda_manejar_el_taller(usuario, taller)
+        taller = Taller.objects.select_for_update().get(pk=taller.pk)
+        if taller.cancelado:
+            raise ValidationError("El taller ya estaba cancelado.")
+        if taller.fecha_inicio <= timezone.now():
+            raise ValidationError("El taller ya empezó y no se puede cancelar.")
+
+        afectadas = taller.inscripciones.filter(estado__in=['CONFIRMADO', 'EN_ESPERA'])
+        for inscripcion in afectadas.select_related("participante"):
+            notificar(inscripcion.participante, taller, mensaje_taller_cancelado.format(taller=taller.nombre))
+        afectadas.update(estado='CANCELADO', posicion_espera=None)
+
+        taller.cancelado = True
+        taller.save(update_fields=["cancelado"])
+        return taller
+
     # --- MÉTODOS DE VALIDACIÓN ---
+
+    @staticmethod
+    def verificar_que_el_taller_no_este_cancelado(taller):
+        if taller.cancelado:
+            raise ValidationError("El taller fue cancelado y ya no recibe inscripciones.")
+
+    @staticmethod
+    def verificar_que_el_taller_este_aprobado(taller):
+        if taller.estado != Taller.Estado.APROBADO:
+            raise ValidationError("El taller todavía no fue aprobado por el operador.")
+
     @staticmethod
     def verificar_que_sea_estudiante_registrado(participante):
         """
@@ -231,7 +315,7 @@ class Operador: #Andrea
 
     @staticmethod
     def calcular_fin_del_bloqueo(participante):
-        # HU-09: la cancelación que supera el máximo dentro de 72 horas bloquea 24 horas desde ella.
+        # la cancelación que supera el máximo dentro de 72 horas bloquea 24 horas desde ella.
         # Devuelve cuándo termina el último bloqueo, o None si nunca lo tuvo.
         fechas_de_cancelacion = list(HistorialCancelacion.objects
                                      .filter(participante=participante)

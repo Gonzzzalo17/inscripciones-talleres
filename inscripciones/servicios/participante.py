@@ -1,10 +1,25 @@
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from inscripciones.models import EstudianteEstatico, Inscripcion, Usuario
+from django.utils import timezone
+from inscripciones.models import EstudianteEstatico, Inscripcion, Taller, Usuario
 from inscripciones.servicios.operador import ALIAS_PADRON
 
 class Participante:
+
+    @staticmethod
+    def buscar_talleres_por_categoria(categoria=None):
+        # el participante ve los talleres a los que todavía se puede inscribir:
+        # aprobados, no cancelados y que no empezaron. Si elige una categoría, solo ve esos
+        # si no elige ninguna categoria, ve todos.
+        disponibles = (Taller.objects
+                       .filter(estado=Taller.Estado.APROBADO, cancelado=False,
+                               fecha_inicio__gt=timezone.now())
+                       .select_related("categoria")
+                       .order_by("fecha_inicio"))
+        if categoria is not None:
+            disponibles = disponibles.filter(categoria=categoria)
+        return disponibles
 
     @staticmethod
     def consultar_mis_inscripciones(participante):
