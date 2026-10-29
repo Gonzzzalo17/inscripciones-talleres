@@ -266,6 +266,15 @@ class Operador:
         taller.save(update_fields=["cancelado"])
         return taller
 
+    @staticmethod
+    def levantar_bloqueo(participante):
+        """
+        Quita el baneo/bloqueo a un participante de forma anticipada.
+        """
+        participante.fin_del_bloqueo = None
+        participante.save()
+        return participante
+
     # --- MÉTODOS DE VALIDACIÓN ---
 
     @staticmethod
