@@ -21,6 +21,9 @@ def lista_talleres(request):
         ocupadas=Count('inscripciones', filter=Q(inscripciones__estado='CONFIRMADO')),
         en_espera=Count('inscripciones', filter=Q(inscripciones__estado='EN_ESPERA')),
     ).order_by('fecha_inicio')
+    # El participante solo ve los talleres abiertos: aprobados y no cancelados
+    if request.user.rol == Usuario.Rol.PARTICIPANTE:
+        talleres = talleres.filter(estado=Taller.Estado.APROBADO, cancelado=False)
     return render(request, 'inscripciones/lista_talleres.html', {'talleres': talleres})
 
 
@@ -277,3 +280,33 @@ def cancelar_inscripcion(request, pk):
     if request.user.rol == Usuario.Rol.OPERADOR:
         return redirect(f"/mis-inscripciones/?participante={participante.pk}")
     return redirect('mis_inscripciones')
+
+
+@solo_para(Usuario.Rol.OPERADOR)
+def buscar_inscripciones(request):
+    # Gantt 72-73: el operador busca inscripciones por participante (código, nombre)
+    # o por taller (código, nombre)
+    texto = request.GET.get('q', '').strip()
+    resultados = Operador.buscar_inscripciones(texto) if texto else []
+    return render(request, 'inscripciones/buscar_inscripciones.html',
+                  {'texto': texto, 'resultados': resultados})
+
+
+@solo_para(Usuario.Rol.OPERADOR)
+@require_POST
+def decidir_taller(request, pk):
+    # El operador aprueba o rechaza un taller que pidió un coordinador
+    taller = get_object_or_404(Taller, pk=pk)
+    decision = request.POST.get('decision')
+    try:
+        if decision == 'aprobar':
+            Operador.aprobar_taller(request.user, taller)
+            messages.success(request, f"Se aprobó el taller {taller.nombre}. Ya recibe inscripciones.")
+        elif decision == 'rechazar':
+            Operador.rechazar_taller(request.user, taller)
+            messages.success(request, f"Se rechazó el taller {taller.nombre}. El coordinador fue avisado.")
+        else:
+            messages.error(request, "Elige aprobar o rechazar.")
+    except ValidationError as e:
+        messages.error(request, e.messages[0])  # ej: "Solo se puede aceptar o rechazar un taller que está pendiente."
+    return redirect('lista_talleres')
