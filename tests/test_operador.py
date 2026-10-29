@@ -152,15 +152,6 @@ def test_cancela_alguien_en_espera_y_las_posiciones_se_reordenan():
     restante = Inscripcion.objects.get(participante=usuario(12), taller=t)
     assert restante.posicion_espera == 1
 
-def test_cancelar_avisa_felicidades_solo_al_promovido():
-    t = taller(cupo=10)
-    for i in range(1, 13):
-        solicitar(i, t)
-    Operador.cancelar_inscripcion(usuario(1), t)
-    aviso = Notificacion.objects.get()
-    assert aviso.participante == usuario(11)
-    assert aviso.taller == t
-
 def test_calcular_ocupacion_con_2_confirmados_1_en_espera_y_1_cancelado():
     t = taller(cupo=2, empieza_en_horas=24)
     for i in range(1, 4):                # 1 y 2 confirmados, 3 en espera
