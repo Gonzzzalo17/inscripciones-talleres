@@ -140,3 +140,7 @@ MAILERS = {
 }
 AUTH_USER_MODEL = 'inscripciones.Usuario'
 DATABASE_ROUTERS = ['inscripciones.db_router.EstudiantesRouter']
+
+
+# HU-12: a dónde va quien intenta entrar sin haber iniciado sesión
+LOGIN_URL = 'login'

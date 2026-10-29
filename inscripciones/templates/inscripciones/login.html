@@ -1,0 +1,28 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Iniciar sesión{% endblock %}
+
+{% block contenido %}
+<div class="caja" style="max-width: 420px; margin: 0 auto;">
+    <h1>Iniciar sesión</h1>
+    <p class="ayuda">El sistema reconoce tu rol automáticamente.</p>
+
+    {% if error %}
+        <div class="aviso rechazo">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="campo">
+            <label for="codigo">Código</label>
+            <input id="codigo" name="codigo" type="text" value="{{ codigo }}" autocomplete="username" required>
+        </div>
+        <div class="campo">
+            <label for="contrasena">Contraseña</label>
+            <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="boton">Iniciar sesión</button>
+    </form>
+    <p class="ayuda">¿Primera vez? <a href="{% url 'registro' %}">Crea tu cuenta</a></p>
+</div>
+{% endblock %}
