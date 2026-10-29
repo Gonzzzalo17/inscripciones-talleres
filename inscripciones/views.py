@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
-from .forms import TallerForm
+from .forms import TallerForm,EditarTallerForm
 from .models import Inscripcion, Taller, Usuario
 from .servicios.operador import Operador
 from .servicios.coordinador import Coordinador
@@ -35,6 +35,8 @@ def crear_taller(request):
                     cupo_maximo=form.cleaned_data['cupo_maximo'],
                     fecha_inicio=form.cleaned_data['fecha_inicio'],
                     fecha_fin=form.cleaned_data['fecha_fin'],
+                    categoria=form.cleaned_data['categoria'],
+                    usuario_creador=request.user,
                 )
             except ValidationError as e:
                 error_msg = e.messages[0] if hasattr(e, 'messages') else str(e)
@@ -167,26 +169,23 @@ def ocupacion_taller(request, pk):
     })
 
 
+
 @solo_para(Usuario.Rol.COORDINADOR, Usuario.Rol.OPERADOR)
 def editar_taller(request, pk):
     taller = get_object_or_404(Taller, pk=pk)
 
     if request.method == 'POST':
-        form = TallerForm(request.POST, instance=taller)
-        motivo = request.POST.get('motivo', '').strip()
+        form = EditarTallerForm(request.POST, instance=taller)
 
-        if not motivo:
-            form.add_error(None, "Debe proporcionar un motivo obligatorio para la edición.")
-
-        if form.is_valid() and motivo:
+        if form.is_valid():
             try:
                 Coordinador.editar_taller(
                     taller_id=taller.pk,
-                    nombre=form.cleaned_data['nombre'],
                     cupo_maximo=form.cleaned_data['cupo_maximo'],
                     fecha_inicio=form.cleaned_data['fecha_inicio'],
                     fecha_fin=form.cleaned_data['fecha_fin'],
-                    motivo=motivo
+                    motivo=form.cleaned_data['motivo'],
+                    usuario=request.user,
                 )
             except ValidationError as e:
                 error_msg = e.messages[0] if hasattr(e, 'messages') else str(e)
@@ -194,13 +193,14 @@ def editar_taller(request, pk):
             else:
                 return redirect('lista_talleres')
     else:
-        form = TallerForm(instance=taller)
+        form = EditarTallerForm(instance=taller)
 
     contexto = {
         'form': form,
         'taller': taller,
     }
     return render(request, 'inscripciones/editar_taller.html', contexto)
+
 
 def iniciar_sesion(request):
     # HU-12 / CU-20: pantalla de entrar con código y contraseña
@@ -277,3 +277,13 @@ def cancelar_inscripcion(request, pk):
     if request.user.rol == Usuario.Rol.OPERADOR:
         return redirect(f"/mis-inscripciones/?participante={participante.pk}")
     return redirect('mis_inscripciones')
+
+
+@solo_para(Usuario.Rol.OPERADOR)
+def buscar_inscripciones(request):
+    # Gantt 72-73: el operador busca inscripciones por participante (código, nombre)
+    # o por taller (código, nombre)
+    texto = request.GET.get('q', '').strip()
+    resultados = Operador.buscar_inscripciones(texto) if texto else []
+    return render(request, 'inscripciones/buscar_inscripciones.html',
+                  {'texto': texto, 'resultados': resultados})

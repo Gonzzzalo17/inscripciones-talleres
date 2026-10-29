@@ -267,14 +267,25 @@ class Operador:
         return taller
 
     @staticmethod
-    def levantar_bloqueo(participante):
+    @transaction.atomic
+    def levantar_bloqueo(operador,participante):
         """
-        Quita el baneo/bloqueo a un participante de forma anticipada.
+        Levanta anticipadamente el bloqueo eliminando únicamente
+        las cancelaciones de las últimas 72 horas.
+        Conserva el historial anterior.
         """
-        participante.fin_del_bloqueo = None
-        participante.save()
-        return participante
+        verificar_que_sea_operador(operador)
 
+        limite = timezone.now() - timedelta(
+            hours=horas_en_que_se_cuentan_cancelaciones
+        )
+
+        HistorialCancelacion.objects.filter(
+            participante=participante,
+            fecha_cancelacion__gte=limite,
+        ).delete()
+
+        return participante
     # --- MÉTODOS DE VALIDACIÓN ---
 
     @staticmethod
