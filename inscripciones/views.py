@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 from django.http import HttpResponseForbidden
 from .acceso import solo_para, TODOS
 from .servicios.sesion import Sesion
+from .servicios.participante import Participante
 
 
 @solo_para(*TODOS)
@@ -224,3 +225,27 @@ def iniciar_sesion(request):
 def cerrar_sesion(request):
     logout(request)
     return redirect('login')
+
+
+def registrarse(request):
+    # Gantt 66-67: el estudiante crea su cuenta con su código y una contraseña
+    if request.user.is_authenticated:
+        return redirect(Sesion.pantalla_de_inicio(request.user))
+
+    errores = []
+    codigo = ''
+    if request.method == 'POST':
+        codigo = request.POST.get('codigo', '').strip()
+        contrasena = request.POST.get('contrasena', '')
+        if contrasena != request.POST.get('repetir_contrasena', ''):
+            errores = ["Las dos contraseñas no son iguales."]
+        else:
+            try:
+                usuario = Participante.registrar_cuenta(codigo, contrasena)
+            except ValidationError as e:
+                errores = e.messages  # puede traer varios motivos (contraseña corta, muy común...)
+            else:
+                login(request, usuario)  # entra directo después de registrarse
+                return redirect(Sesion.pantalla_de_inicio(usuario))
+
+    return render(request, 'inscripciones/registro.html', {'errores': errores, 'codigo': codigo})

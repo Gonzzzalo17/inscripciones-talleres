@@ -1,0 +1,35 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Crear cuenta{% endblock %}
+
+{% block contenido %}
+<div class="caja" style="max-width: 420px; margin: 0 auto;">
+    <h1>Crear cuenta</h1>
+    <p class="ayuda">Solo para estudiantes de la universidad. Usa tu código universitario.</p>
+
+    {% if errores %}
+        <div class="aviso rechazo">
+            {% for error in errores %}<div>{{ error }}</div>{% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="campo">
+            <label for="codigo">Código universitario</label>
+            <input id="codigo" name="codigo" type="text" value="{{ codigo }}" autocomplete="username" required>
+        </div>
+        <div class="campo">
+            <label for="contrasena">Contraseña</label>
+            <input id="contrasena" name="contrasena" type="password" autocomplete="new-password" required>
+            <p class="ayuda">Mínimo 8 caracteres, que no sea solo números ni se parezca a tu código.</p>
+        </div>
+        <div class="campo">
+            <label for="repetir_contrasena">Repite la contraseña</label>
+            <input id="repetir_contrasena" name="repetir_contrasena" type="password" autocomplete="new-password" required>
+        </div>
+        <button type="submit" class="boton">Crear cuenta</button>
+    </form>
+    <p class="ayuda">¿Ya tienes cuenta? <a href="{% url 'login' %}">Inicia sesión</a></p>
+</div>
+{% endblock %}
