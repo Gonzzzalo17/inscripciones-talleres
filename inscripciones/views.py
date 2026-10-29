@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.contrib.auth import login, logout
 from django.views.decorators.http import require_POST
 from django.http import HttpResponseForbidden
+from django.contrib import messages
 from .acceso import solo_para, TODOS
 from .servicios.sesion import Sesion
 from .servicios.participante import Participante
@@ -249,3 +250,30 @@ def registrarse(request):
                 return redirect(Sesion.pantalla_de_inicio(usuario))
 
     return render(request, 'inscripciones/registro.html', {'errores': errores, 'codigo': codigo})
+
+
+@solo_para(Usuario.Rol.PARTICIPANTE, Usuario.Rol.OPERADOR)
+@require_POST
+def cancelar_inscripcion(request, pk):
+    # Gantt 34-35 / 40-41: botón "Cancelar" en Mis inscripciones
+    inscripcion = get_object_or_404(Inscripcion, pk=pk)
+    participante = inscripcion.participante
+    # HU-12: el participante solo puede cancelar lo suyo; el operador, cualquiera
+    if request.user.rol == Usuario.Rol.PARTICIPANTE and participante != request.user:
+        return HttpResponseForbidden("No tienes permiso para ver esta página.")
+
+    try:
+        Operador.cancelar_inscripcion(participante, inscripcion.taller)
+    except ValidationError as e:
+        messages.error(request, e.messages[0])  # ej: "Ya pasó el tiempo límite para cancelar."
+    else:
+        messages.success(request, f"Se canceló la inscripción en {inscripcion.taller.nombre}.")
+        # Regla del baneo: si con esta cancelación queda bloqueado, se le avisa
+        fin_bloqueo = Operador.calcular_fin_del_bloqueo(participante)
+        if fin_bloqueo and fin_bloqueo > timezone.now():
+            messages.warning(request, f"Por cancelar muchas veces quedó bloqueado hasta el "
+                                      f"{fin_bloqueo:%d/%m %H:%M} y perdió sus otras inscripciones.")
+
+    if request.user.rol == Usuario.Rol.OPERADOR:
+        return redirect(f"/mis-inscripciones/?participante={participante.pk}")
+    return redirect('mis_inscripciones')

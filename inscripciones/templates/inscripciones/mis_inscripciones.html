@@ -38,6 +38,7 @@
                         <th>Fin</th>
                         <th>Estado</th>
                         <th>Posición en espera</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,6 +54,16 @@
                                     {{ inscripcion.posicion_espera }}
                                 {% else %}
                                     —
+                                {% endif %}
+                            </td>
+                            <td>
+                                {# Gantt 34-35 / 40-41: solo se puede cancelar lo que está activo #}
+                                {% if inscripcion.estado == "CONFIRMADO" or inscripcion.estado == "EN_ESPERA" %}
+                                    <form method="post" action="{% url 'cancelar_inscripcion' inscripcion.pk %}"
+                                          onsubmit="return confirm('¿Seguro que quieres cancelar esta inscripción?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="boton secundario">Cancelar</button>
+                                    </form>
                                 {% endif %}
                             </td>
                         </tr>
