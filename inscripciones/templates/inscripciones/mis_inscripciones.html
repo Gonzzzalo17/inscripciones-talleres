@@ -5,6 +5,8 @@
 {% block contenido %}
 <h1>Mis inscripciones</h1>
 
+{# HU-12: solo el operador elige a quién consultar; el participante ve directo las suyas #}
+{% if not es_participante %}
 <div class="caja">
     {# GET: el participante elegido viaja en la URL (?participante=<id>) #}
     <form method="get">
@@ -22,6 +24,7 @@
         <button type="submit" class="boton">Ver inscripciones</button>
     </form>
 </div>
+{% endif %}
 
 {% if participante_seleccionado %}
     {% if inscripciones %}
@@ -35,6 +38,7 @@
                         <th>Fin</th>
                         <th>Estado</th>
                         <th>Posición en espera</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -52,13 +56,23 @@
                                     —
                                 {% endif %}
                             </td>
+                            <td>
+                                {# Gantt 34-35 / 40-41: solo se puede cancelar lo que está activo #}
+                                {% if inscripcion.estado == "CONFIRMADO" or inscripcion.estado == "EN_ESPERA" %}
+                                    <form method="post" action="{% url 'cancelar_inscripcion' inscripcion.pk %}"
+                                          onsubmit="return confirm('¿Seguro que quieres cancelar esta inscripción?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="boton secundario">Cancelar</button>
+                                    </form>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     {% else %}
-        <p class="vacio">Este participante no tiene inscripciones.</p>
+        <p class="vacio">Todavía no hay inscripciones.</p>
     {% endif %}
 {% endif %}
 

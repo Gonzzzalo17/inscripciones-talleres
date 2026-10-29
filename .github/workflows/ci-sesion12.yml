@@ -32,15 +32,15 @@ jobs:
       # Para paquetes src/ con pyproject.toml, agregar aqui su instalacion:
       # - run: python -m pip install -e .
 
-      - name: Comprobar el contrato del flujo
-        run: python -m pytest tests/sesion12 -q --junitxml=evidencias/sesion12-junit.xml
+      - name: Correr todas las pruebas
+        run: python -m pytest -q --junitxml=evidencias/pruebas-junit.xml
 
       - name: Conservar el resultado de las pruebas
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: resultados-sesion12-${{ github.run_id }}-${{ github.run_attempt }}
-          path: evidencias/sesion12-junit.xml
+          path: evidencias/pruebas-junit.xml
           if-no-files-found: warn
           retention-days: 14
 

@@ -1,0 +1,60 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Historial de cancelaciones{% endblock %}
+
+{% block contenido %}
+<h1>Historial de cancelaciones</h1>
+
+<div class="caja">
+          {# GET: el participante elegido viaja en la URL (?participante_id=...) #}
+    <form method="get">
+        <div class="campo">
+            <label for="participante_id">Participante</label>
+            <select id="participante_id" name="participante_id" required>
+                <option value="">Elige un participante</option>
+                {% for p in participantes %}
+                    <option value="{{ p.pk }}" {% if participante and p.pk == participante.pk %}selected{% endif %}>
+                        {{ p.get_full_name|default:p.username }}{% if p.codigo %} ({{ p.codigo }}){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="boton">Ver historial</button>
+    </form>
+</div>
+
+{% if participante %}
+    {% if sigue_bloqueado %}
+        <div class="aviso rechazo">
+            <strong>Bloqueado hasta {{ fin_bloqueo|date:"d/m/Y H:i" }}</strong> por cancelar más de 3 veces en 72 horas.
+        </div>
+    {% endif %}
+
+    {% if historial %}
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Taller</th>
+                        <th>Fecha de cancelación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cancelacion in historial %}
+                        <tr>
+                            <td>{{ cancelacion.taller.codigo }}</td>
+                            <td>{{ cancelacion.taller.nombre }}</td>
+                            <td>{{ cancelacion.fecha_cancelacion|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="vacio">Sin cancelaciones.</p>
+    {% endif %}
+{% endif %}
+
+<p style="margin-top: 1.5rem;"><a class="boton secundario" href="{% url 'lista_talleres' %}">Volver a talleres</a></p>
+{% endblock %}
