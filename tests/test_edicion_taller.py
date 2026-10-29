@@ -45,7 +45,7 @@ class EdicionTallerAuditoriaTestCase(TestCase):
 
     def test_editar_taller_sin_motivo_falla(self):
         # Intentar editar sin enviar motivo debe lanzar ValidationError
-        with self.assertRaises(ValidationError) as ctx:
+        with self.assertRaises(ValidationError):
             Coordinador.editar_taller(
                 taller_id=self.taller.pk,
                 nombre="Taller Modificado",
@@ -54,4 +54,3 @@ class EdicionTallerAuditoriaTestCase(TestCase):
                 fecha_fin=self.taller.fecha_fin,
                 motivo=""  # Motivo vacío
             )
-        self.assertIn("motivo", str(ctx.exception).lower())

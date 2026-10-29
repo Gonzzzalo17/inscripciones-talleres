@@ -269,3 +269,20 @@ def test_el_coordinador_solo_cancela_sus_talleres():
 
     taller_de_ana.refresh_from_db()
     assert taller_de_ana.cancelado
+def test_operador_desbloquea_participante_permitiendo_nueva_inscripcion():
+    # 1. Obtener participante de prueba y simular bloqueo
+    p = usuario(1)
+    p.fin_del_bloqueo = timezone.now() + timedelta(hours=20)
+    p.save()
+
+    # 2. El operador levanta el baneo
+    Operador.levantar_bloqueo(p)
+    p.refresh_from_db()
+
+    # 3. Validar que la fecha de bloqueo ya sea None
+    assert p.fin_del_bloqueo is None
+
+    # 4. Verificar que ahora SÍ pueda inscribirse sin lanzar ValidationError
+    t = taller(codigo="DES-BAN-01", cupo=5)
+    inscripcion = solicitar(1, t)
+    assert inscripcion.pk is not None
