@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
 from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion, Taller
-from inscripciones.servicios.permisos import verificar_que_sea_operador
+from inscripciones.servicios.permisos import verificar_que_pueda_manejar_el_taller, verificar_que_sea_operador
 from inscripciones.servicios.notificaciones import notificar
 
 porcentaje_lista_espera = 0.20
@@ -19,6 +19,7 @@ mensaje_bloqueo = ("Quedaste bloqueado hasta el {fin:%d/%m %H:%M} por cancelar m
                    "en {horas} horas. Perdiste tus inscripciones y saliste de las listas de espera.")
 mensaje_taller_aprobado = "Tu taller {taller} fue aprobado y ya recibe inscripciones."
 mensaje_taller_rechazado = "Tu taller {taller} fue rechazado. Puedes corregirlo y volver a enviarlo."
+mensaje_taller_cancelado = "El taller {taller} fue cancelado. Tu inscripción quedó anulada."
 
 limite_maximo_cancelaciones = 3
 horas_en_que_se_cuentan_cancelaciones = 72
@@ -75,6 +76,7 @@ class Operador:
         taller = Taller.objects.select_for_update().get(pk=taller.pk)
         cls.verificar_que_sea_estudiante_registrado(participante)
         cls.verificar_que_no_este_bloqueado(participante)
+        cls.verificar_que_el_taller_no_este_cancelado(taller)
         cls.verificar_que_el_taller_este_aprobado(taller)
         cls.verificar_que_el_taller_no_haya_empezado(taller)
         cls.verificar_que_el_usuario_no_este_inscrito(participante, taller)
@@ -242,7 +244,34 @@ class Operador:
             notificar(taller.coordinador, taller, mensaje.format(taller=taller.nombre))
         return taller
 
+    @staticmethod
+    @transaction.atomic
+    def cancelar_taller(usuario, taller):
+        # el operador cancela cualquier taller y el coordinador solo los suyos.
+        # Todos los inscritos y los de la lista de espera quedan cancelados y
+        # reciben un aviso. No se guarda en HistorialCancelacion: no cuenta para el bloqueo.
+        verificar_que_pueda_manejar_el_taller(usuario, taller)
+        taller = Taller.objects.select_for_update().get(pk=taller.pk)
+        if taller.cancelado:
+            raise ValidationError("El taller ya estaba cancelado.")
+        if taller.fecha_inicio <= timezone.now():
+            raise ValidationError("El taller ya empezó y no se puede cancelar.")
+
+        afectadas = taller.inscripciones.filter(estado__in=['CONFIRMADO', 'EN_ESPERA'])
+        for inscripcion in afectadas.select_related("participante"):
+            notificar(inscripcion.participante, taller, mensaje_taller_cancelado.format(taller=taller.nombre))
+        afectadas.update(estado='CANCELADO', posicion_espera=None)
+
+        taller.cancelado = True
+        taller.save(update_fields=["cancelado"])
+        return taller
+
     # --- MÉTODOS DE VALIDACIÓN ---
+
+    @staticmethod
+    def verificar_que_el_taller_no_este_cancelado(taller):
+        if taller.cancelado:
+            raise ValidationError("El taller fue cancelado y ya no recibe inscripciones.")
 
     @staticmethod
     def verificar_que_el_taller_este_aprobado(taller):

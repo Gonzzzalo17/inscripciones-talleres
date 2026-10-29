@@ -203,7 +203,6 @@ def test_buscar_sin_texto_no_trae_nada_y_no_cambia_datos():
 def operador_del_sistema():
     return Usuario.objects.create(username="operador", rol=Usuario.Rol.OPERADOR)
 
-
 def test_operador_aprueba_un_taller_pendiente_y_recien_ahi_acepta_inscripciones():
     pintura = taller(codigo="PIN-APR-01", cupo=5)
     pintura.estado = Taller.Estado.PENDIENTE
@@ -215,7 +214,6 @@ def test_operador_aprueba_un_taller_pendiente_y_recien_ahi_acepta_inscripciones(
     solicitar(1, pintura)
 
     assert estado(1, pintura) == "CONFIRMADO"
-
 
 def test_taller_rechazado_no_acepta_inscripciones():
     pintura = taller(codigo="PIN-REC-01", cupo=5)
@@ -229,7 +227,6 @@ def test_taller_rechazado_no_acepta_inscripciones():
     with pytest.raises(ValidationError):
         solicitar(1, pintura)
 
-
 def test_solo_el_operador_decide_y_solo_sobre_talleres_pendientes():
     coordinadora = Usuario.objects.create(username="coordinadora", rol=Usuario.Rol.COORDINADOR)
     pintura = taller(codigo="PIN-DEC-01", cupo=5)
@@ -241,3 +238,34 @@ def test_solo_el_operador_decide_y_solo_sobre_talleres_pendientes():
     Operador.aprobar_taller(operador_del_sistema(), pintura)
     with pytest.raises(ValidationError):
         Operador.rechazar_taller(Usuario.objects.get(username="operador"), pintura)  # ya no está pendiente
+
+# cancelar un taller completo
+def test_cancelar_taller_anula_a_todos_les_avisa_y_no_cuenta_para_el_bloqueo():
+    t = taller(codigo="DAN-CAN-01", cupo=2, empieza_en_horas=24)
+    for i in (1, 2, 3):                  # 1 y 2 confirmados, 3 en espera
+        solicitar(i, t)
+    avisos_antes = Notificacion.objects.count()
+
+    Operador.cancelar_taller(operador_del_sistema(), t)
+
+    t.refresh_from_db()
+    assert t.cancelado
+    assert Inscripcion.objects.filter(taller=t).exclude(estado="CANCELADO").count() == 0
+    assert Notificacion.objects.count() == avisos_antes + 3     # un aviso para cada uno
+    assert HistorialCancelacion.objects.count() == 0            # no suma para el bloqueo
+    with pytest.raises(ValidationError):
+        solicitar(4, t)                                         # ya no recibe inscripciones
+
+def test_el_coordinador_solo_cancela_sus_talleres():
+    ana = Usuario.objects.create(username="ana", rol=Usuario.Rol.COORDINADOR)
+    luis = Usuario.objects.create(username="luis", rol=Usuario.Rol.COORDINADOR)
+    taller_de_ana = taller(codigo="DAN-ANA-01", cupo=5)
+    Taller.objects.filter(pk=taller_de_ana.pk).update(coordinador=ana)
+    taller_de_ana.refresh_from_db()
+
+    with pytest.raises(ValidationError):
+        Operador.cancelar_taller(luis, taller_de_ana)           # no es suyo
+    Operador.cancelar_taller(ana, taller_de_ana)                # el suyo: sí
+
+    taller_de_ana.refresh_from_db()
+    assert taller_de_ana.cancelado
