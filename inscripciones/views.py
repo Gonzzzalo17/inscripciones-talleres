@@ -35,6 +35,8 @@ def crear_taller(request):
                     cupo_maximo=form.cleaned_data['cupo_maximo'],
                     fecha_inicio=form.cleaned_data['fecha_inicio'],
                     fecha_fin=form.cleaned_data['fecha_fin'],
+                    categoria=form.cleaned_data['categoria'],
+                    usuario_creador=request.user,
                 )
             except ValidationError as e:
                 error_msg = e.messages[0] if hasattr(e, 'messages') else str(e)

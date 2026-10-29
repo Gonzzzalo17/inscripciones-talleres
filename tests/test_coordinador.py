@@ -2,7 +2,7 @@ from datetime import timedelta
 import pytest
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from inscripciones.models import Inscripcion, Taller, Usuario
+from inscripciones.models import Inscripcion, Taller, Usuario, Categoria
 from inscripciones.servicios.coordinador import Coordinador
 from inscripciones.servicios.operador import Operador
 
@@ -17,10 +17,21 @@ def fecha_hace_horas(horas):
     return timezone.now() - timedelta(hours=horas)
 
 def crear_taller_que_empieza_manana(nombre="Danza", cupo=10):
-    # Crea un taller válido con la lógica real del coordinador:
-    # empieza en 24 horas y dura 2 horas.
-    return Coordinador.crear_taller(nombre, cupo,
-                                    fecha_dentro_de_horas(24), fecha_dentro_de_horas(26))
+    categoria, _ = Categoria.objects.get_or_create(nombre="Deporte")
+    usuario = Usuario.objects.create_user(
+        username=f"coordinador{Usuario.objects.count()}",
+        password="test123",
+        rol=Usuario.Rol.COORDINADOR,
+    )
+
+    return Coordinador.crear_taller(
+        nombre,
+        cupo,
+        fecha_dentro_de_horas(24),
+        fecha_dentro_de_horas(26),
+        categoria,
+        usuario,
+    )
 
 def editar_taller_para_pasado_manana(taller, nombre, cupo):
     # Edita el taller con la lógica real del coordinador,
@@ -50,8 +61,18 @@ def test_rechaza_cupo_cero():
 def test_rechaza_fin_antes_del_inicio():
     inicio = fecha_dentro_de_horas(24)
     fin_una_hora_antes = fecha_dentro_de_horas(23)
+
+    categoria, _ = Categoria.objects.get_or_create(nombre="Deporte")
+    usuario = Usuario.objects.create_user(
+        username="coordinador_prueba",
+        password="test123",
+        rol=Usuario.Rol.COORDINADOR,
+    )
+
     with pytest.raises(ValidationError):
-        Coordinador.crear_taller("Danza", 10, inicio, fin_una_hora_antes)
+        Coordinador.crear_taller(
+            "Danza", 10, inicio, fin_una_hora_antes, categoria, usuario
+        )
 
 def test_editar_cambia_nombre_y_cupo():
     taller = editar_taller_para_pasado_manana(crear_taller_que_empieza_manana(), "Ballet", 20)
@@ -73,12 +94,14 @@ def test_bajar_el_cupo_solo_hasta_los_confirmados_sin_mover_a_nadie():
     assert taller.inscripciones.filter(estado="EN_ESPERA").count() == 1
 
 def test_editar_subiendo_el_cupo_confirma_a_la_espera_en_orden():
-    taller = crear_taller_que_empieza_manana(cupo=1)
-    inscribir_participante(taller, "CONFIRMADO")
+    taller = crear_taller_que_empieza_manana(cupo=4)
+
+    for _ in range(4):
+        inscribir_participante(taller, "CONFIRMADO")
     primero_en_espera = inscribir_participante(taller, "EN_ESPERA", posicion_espera=1)
     segundo_en_espera = inscribir_participante(taller, "EN_ESPERA", posicion_espera=2)
 
-    editar_taller_para_pasado_manana(taller, "Danza", 2)
+    editar_taller_para_pasado_manana(taller, "Danza", 5)
 
     primero_en_espera.refresh_from_db()
     segundo_en_espera.refresh_from_db()
@@ -93,25 +116,61 @@ def test_rechaza_editar_un_taller_que_ya_empezo():
         editar_taller_para_pasado_manana(taller_empezado, "Ballet", 10)
 
 def test_subir_el_cupo_confirma_al_primero_en_espera_y_el_segundo_pasa_a_ser_primero():
-    taller = crear_taller_que_empieza_manana(cupo=1)
-    inscribir_participante(taller, "CONFIRMADO")
-    primero_en_espera = inscribir_participante(taller, "EN_ESPERA", posicion_espera=1)
-    segundo_en_espera = inscribir_participante(taller, "EN_ESPERA", posicion_espera=2)
-    taller.cupo_maximo = 2
+    taller = crear_taller_que_empieza_manana(cupo=4)
+
+    for _ in range(3):
+        inscribir_participante(taller, "CONFIRMADO")
+
+    primero_en_espera = inscribir_participante(
+        taller, "EN_ESPERA", posicion_espera=1
+    )
+    segundo_en_espera = inscribir_participante(
+        taller, "EN_ESPERA", posicion_espera=2
+    )
+
+    taller.cupo_maximo = 4
+    taller.save()
+
+    # Primero se ocupa la cuarta plaza confirmada.
+    nuevo_confirmado = inscribir_participante(taller, "CONFIRMADO")
+    assert nuevo_confirmado.estado == "CONFIRMADO"
+
+    # Al aumentar el cupo a 5, se promueve al primero de la espera.
+    taller.cupo_maximo = 5
     taller.save()
 
     assert Operador.promover_hasta_llenar(taller) == [primero_en_espera]
+
+    primero_en_espera.refresh_from_db()
     segundo_en_espera.refresh_from_db()
+
+    assert primero_en_espera.estado == "CONFIRMADO"
+    assert segundo_en_espera.estado == "EN_ESPERA"
     assert segundo_en_espera.posicion_espera == 1
 
 def test_subir_el_cupo_nunca_confirma_mas_que_el_nuevo_cupo():
-    taller = crear_taller_que_empieza_manana(cupo=1)
-    inscribir_participante(taller, "CONFIRMADO")
+    taller = crear_taller_que_empieza_manana(cupo=4)
+
+    for _ in range(4):
+        inscribir_participante(taller, "CONFIRMADO")
+
     for posicion in (1, 2, 3):
-        inscribir_participante(taller, "EN_ESPERA", posicion_espera=posicion)
-    taller.cupo_maximo = 3
+        inscribir_participante(
+            taller, "EN_ESPERA", posicion_espera=posicion
+        )
+
+    taller.cupo_maximo = 5
     taller.save()
 
     Operador.promover_hasta_llenar(taller)
-    assert taller.inscripciones.filter(estado="CONFIRMADO").count() == 3
-    assert taller.inscripciones.filter(estado="EN_ESPERA").count() == 1
+
+    assert taller.inscripciones.filter(estado="CONFIRMADO").count() == 5
+    assert taller.inscripciones.filter(estado="EN_ESPERA").count() == 2
+
+@pytest.mark.django_db
+def test_coordinador_crea_taller_pendiente_y_asociado():
+    taller = crear_taller_que_empieza_manana()
+
+    assert taller.estado == Taller.Estado.PENDIENTE
+    assert taller.coordinador is not None
+    assert taller.categoria is not None

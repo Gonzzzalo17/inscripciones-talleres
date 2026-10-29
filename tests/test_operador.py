@@ -4,8 +4,8 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.db import connections
 from django.utils import timezone
-
-from inscripciones.models import HistorialCancelacion, Inscripcion, Taller, Usuario, Notificacion
+from inscripciones.servicios.coordinador import Coordinador
+from inscripciones.models import HistorialCancelacion, Inscripcion, Taller, Usuario, Notificacion, Categoria
 from inscripciones.servicios.operador import Operador
 
 pytestmark = pytest.mark.django_db(databases=["default", "estudiantes_db"])
@@ -269,3 +269,137 @@ def test_el_coordinador_solo_cancela_sus_talleres():
 
     taller_de_ana.refresh_from_db()
     assert taller_de_ana.cancelado
+
+
+@pytest.mark.django_db(databases=['default', 'estudiantes_db'])
+def test_operador_desbloquea_participante_permitiendo_nueva_inscripcion():
+    # 1. Obtener un participante (ajusta el nombre según la fixture o función de tu test_operador.py)
+    # Por ejemplo, si usas una fixture, se la pasas como argumento al test, o si creas el usuario:
+    participante = Usuario.objects.create(username="estudiante_bloqueado", codigo="1000001",
+                                          rol=Usuario.Rol.PARTICIPANTE)
+    operador = Usuario.objects.create(
+        username="operador_test",
+        codigo="OP-001",
+        rol=Usuario.Rol.OPERADOR,
+    )
+
+    t1 = Taller.objects.create(
+        codigo="CAN-01",
+        nombre="Taller 1",
+        cupo_maximo=5,
+        fecha_inicio=timezone.now() + timedelta(days=1),
+        fecha_fin=timezone.now() + timedelta(days=1, hours=2)
+    )
+
+    # 2. Generar 4 cancelaciones reales para que el sistema lo considere bloqueado
+    ahora = timezone.now()
+    for _ in range(4):
+        HistorialCancelacion.objects.create(
+            participante=participante,
+            taller=t1,
+            fecha_cancelacion=ahora
+        )
+
+    # 3. Verificar que efectivamente está bloqueado
+    with pytest.raises(ValidationError):
+        Operador.verificar_que_no_este_bloqueado(participante)
+
+    # 4. El operador levanta el baneo (elimina sus cancelaciones)
+    Operador.levantar_bloqueo(operador, participante)
+
+    # 5. Verificar que ahora SÍ pueda inscribirse en un nuevo taller
+    t2 = Taller.objects.create(
+        codigo="DES-BAN-01",
+        nombre="Taller 2",
+        cupo_maximo=5,
+        fecha_inicio=timezone.now() + timedelta(days=2),
+        fecha_fin=timezone.now() + timedelta(days=2, hours=2)
+    )
+
+    inscripcion = Operador.registrar_inscripcion(participante, t2)
+    assert inscripcion.pk is not None
+    assert inscripcion.estado == "CONFIRMADO"
+
+@pytest.mark.django_db(databases=["default", "estudiantes_db"])
+def test_operador_puede_levantar_bloqueo_y_conservar_historial_antiguo():
+        participante = Usuario.objects.create(
+            username="estudiante_bloqueado",
+            codigo="1000001",
+            rol=Usuario.Rol.PARTICIPANTE,
+        )
+        operador = Usuario.objects.create(
+            username="operador_historial_test",
+            codigo="OP-002",
+            rol=Usuario.Rol.OPERADOR,
+        )
+
+        taller = Taller.objects.create(
+            codigo="BAN-TEST-01",
+            nombre="Taller de prueba",
+            cupo_maximo=5,
+            fecha_inicio=timezone.now() + timedelta(days=2),
+            fecha_fin=timezone.now() + timedelta(days=2, hours=2),
+            estado=Taller.Estado.APROBADO,
+        )
+
+        ahora = timezone.now()
+
+        # Una cancelación antigua que debe conservarse.
+        antigua = HistorialCancelacion.objects.create(
+            participante=participante,
+            taller=taller,
+        )
+        HistorialCancelacion.objects.filter(pk=antigua.pk).update(
+            fecha_cancelacion=ahora - timedelta(days=5)
+        )
+
+        # Cuatro cancelaciones recientes que provocan el bloqueo.
+        for _ in range(4):
+            HistorialCancelacion.objects.create(
+                participante=participante,
+                taller=taller,
+            )
+
+        with pytest.raises(ValidationError):
+            Operador.verificar_que_no_este_bloqueado(participante)
+
+        Operador.levantar_bloqueo(operador, participante)
+
+        # Ya no debe estar bloqueado.
+        Operador.verificar_que_no_este_bloqueado(participante)
+
+        # El historial antiguo debe seguir existiendo.
+        assert HistorialCancelacion.objects.filter(
+            pk=antigua.pk
+        ).exists()
+
+        # Las cancelaciones recientes deben haberse eliminado.
+        assert not HistorialCancelacion.objects.filter(
+            participante=participante,
+            fecha_cancelacion__gte=ahora - timedelta(hours=72),
+        ).exists()
+
+        # La inscripción debe funcionar si el participante
+        # también figura en el padrón estático.
+        inscripcion = Operador.registrar_inscripcion(participante, taller)
+        assert inscripcion.estado == "CONFIRMADO"
+def test_operador_crea_taller_aprobado_sin_coordinador():
+    operador = Usuario.objects.create(
+        username="operador_creador_test",
+        codigo="OP-003",
+        rol=Usuario.Rol.OPERADOR,
+    )
+    categoria, _ = Categoria.objects.get_or_create(nombre="Deporte")
+
+    taller_creado = Coordinador.crear_taller(
+        nombre="Taller de prueba",
+        cupo_maximo=10,
+        fecha_inicio=timezone.now() + timedelta(days=2),
+        fecha_fin=timezone.now() + timedelta(days=2, hours=2),
+        categoria=categoria,
+        usuario_creador=operador,
+    )
+
+    assert taller_creado.estado == Taller.Estado.APROBADO
+    assert taller_creado.coordinador is None
+    assert taller_creado.categoria == categoria

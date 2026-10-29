@@ -266,6 +266,26 @@ class Operador:
         taller.save(update_fields=["cancelado"])
         return taller
 
+    @staticmethod
+    @transaction.atomic
+    def levantar_bloqueo(operador,participante):
+        """
+        Levanta anticipadamente el bloqueo eliminando únicamente
+        las cancelaciones de las últimas 72 horas.
+        Conserva el historial anterior.
+        """
+        verificar_que_sea_operador(operador)
+
+        limite = timezone.now() - timedelta(
+            hours=horas_en_que_se_cuentan_cancelaciones
+        )
+
+        HistorialCancelacion.objects.filter(
+            participante=participante,
+            fecha_cancelacion__gte=limite,
+        ).delete()
+
+        return participante
     # --- MÉTODOS DE VALIDACIÓN ---
 
     @staticmethod

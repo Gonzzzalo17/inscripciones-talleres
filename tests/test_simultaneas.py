@@ -1,5 +1,7 @@
+import concurrent.futures
 import threading
 import time
+from django.core.exceptions import ValidationError
 from datetime import timedelta
 
 import pytest
@@ -20,8 +22,9 @@ def padron():
         c.execute("CREATE TABLE IF NOT EXISTS estudiantes "
                   "(ci VARCHAR(20) PRIMARY KEY, nombre VARCHAR(100), apellido VARCHAR(100), carrera VARCHAR(100))")
         c.execute("DELETE FROM estudiantes")
-        for numero in (1, 2, 3):
-            c.execute("INSERT INTO estudiantes (ci, nombre, apellido) VALUES (%s, 'N', 'A')", [str(1000000 + numero)])
+        for numero in range(1, 31):
+            c.execute("INSERT OR IGNORE INTO estudiantes (ci, nombre, apellido) VALUES (%s, 'N', 'A')",
+                      [str(1000000 + numero)])
 
 
 @pytest.fixture
@@ -69,3 +72,45 @@ def test_dos_pedidos_a_la_vez_por_la_ultima_plaza_solo_uno_queda_confirmado(cont
 
     assert Inscripcion.objects.filter(taller=taller, estado="CONFIRMADO").count() == 2
     assert Inscripcion.objects.filter(taller=taller, estado="EN_ESPERA").count() == 1
+
+def test_carga_solicitudes_simultaneas_respeta_limite_cupo_y_espera():
+    # 1. Crear taller con cupo = 10
+    taller = Taller.objects.create(
+        codigo="CARGA-01",
+        nombre="Taller de Prueba de Carga",
+        cupo_maximo=10,
+        fecha_inicio=timezone.now() + timedelta(days=2),
+        fecha_fin=timezone.now() + timedelta(days=2, hours=2)
+    )
+
+    max_espera = Operador.capacidad_lista_de_espera(taller.cupo_maximo) # 2
+    total_admitidos_posibles = taller.cupo_maximo + max_espera # 12
+
+    # 2. Crear 20 participantes con CIs VÁLIDAS del padrón (1000001 a 1000020)
+    participantes = []
+    for i in range(1, 21):
+        ci = str(1000000 + i)
+        u, _ = Usuario.objects.get_or_create(
+            username=f"p_carga_{i}",
+            defaults={"codigo": ci, "rol": Usuario.Rol.PARTICIPANTE}
+        )
+        participantes.append(u)
+
+    # 3. Intentar registrar inscripción
+    def intentar_inscripcion(participante):
+        try:
+            return Operador.registrar_inscripcion(participante, taller)
+        except ValidationError:
+            return None
+
+    # 4. Peticiones concurrentes
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        list(executor.map(intentar_inscripcion, participantes))
+
+    # 5. Assertions
+    confirmados = Inscripcion.objects.filter(taller=taller, estado="CONFIRMADO").count()
+    en_espera = Inscripcion.objects.filter(taller=taller, estado="EN_ESPERA").count()
+
+    assert confirmados <= taller.cupo_maximo, f"Se superó el cupo: {confirmados} > {taller.cupo_maximo}"
+    assert en_espera <= max_espera, f"Se superó la lista de espera: {en_espera} > {max_espera}"
+    assert confirmados + en_espera == total_admitidos_posibles

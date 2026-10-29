@@ -6,9 +6,10 @@ from .models import Taller
 class TallerForm(forms.ModelForm):
     class Meta:
         model = Taller
-        fields = ['nombre', 'cupo_maximo', 'fecha_inicio', 'fecha_fin']
+        fields = ['nombre','categoria', 'cupo_maximo', 'fecha_inicio', 'fecha_fin']
         labels = {
             'nombre': 'Nombre del taller',
+            'categoria': 'Categoria',
             'cupo_maximo': 'Cupo máximo',
             'fecha_inicio': 'Inicio',
             'fecha_fin': 'Fin',
@@ -17,6 +18,14 @@ class TallerForm(forms.ModelForm):
             'fecha_inicio': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'fecha_fin': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
         }
+
+    def clean_categoria(self):
+        categoria = self.cleaned_data.get('categoria')
+        if categoria is None:
+            raise forms.ValidationError(
+                "La categoría del taller es obligatoria."
+            )
+        return categoria
 
     def clean(self):
         datos = super().clean()
