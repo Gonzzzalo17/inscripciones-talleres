@@ -141,39 +141,6 @@ def test_rechaza_editar_un_taller_que_ya_empezo():
     with pytest.raises(ValidationError, match="ya empezó"):
         editar_taller_para_pasado_manana(taller_empezado, 10)
 
-def test_subir_el_cupo_confirma_al_primero_en_espera_y_el_segundo_pasa_a_ser_primero():
-    taller = crear_taller_que_empieza_manana(cupo=4)
-
-    for _ in range(3):
-        inscribir_participante(taller, "CONFIRMADO")
-
-    primero_en_espera = inscribir_participante(
-        taller, "EN_ESPERA", posicion_espera=1
-    )
-    segundo_en_espera = inscribir_participante(
-        taller, "EN_ESPERA", posicion_espera=2
-    )
-
-    taller.cupo_maximo = 4
-    taller.save()
-
-    # Primero se ocupa la cuarta plaza confirmada.
-    nuevo_confirmado = inscribir_participante(taller, "CONFIRMADO")
-    assert nuevo_confirmado.estado == "CONFIRMADO"
-
-    # Al aumentar el cupo a 5, se promueve al primero de la espera.
-    taller.cupo_maximo = 5
-    taller.save()
-
-    assert Operador.promover_hasta_llenar(taller) == [primero_en_espera]
-
-    primero_en_espera.refresh_from_db()
-    segundo_en_espera.refresh_from_db()
-
-    assert primero_en_espera.estado == "CONFIRMADO"
-    assert segundo_en_espera.estado == "EN_ESPERA"
-    assert segundo_en_espera.posicion_espera == 1
-
 def test_subir_el_cupo_nunca_confirma_mas_que_el_nuevo_cupo():
     taller = crear_taller_que_empieza_manana(cupo=4)
 

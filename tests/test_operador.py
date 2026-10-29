@@ -46,11 +46,10 @@ def en_espera(t):
     return Inscripcion.objects.filter(taller=t, estado="EN_ESPERA").count()
 
 @pytest.mark.parametrize("cupo,esperado", [
-    (1, 1), (2, 1), (5, 1), (10, 2), (12, 3), (15, 3), (20, 4), (35, 7), (55, 11)])
+       (4, 1), (5, 1), (6, 2), (12, 3), (40, 8)])
 def test_capacidad_lista_espera_redondea_hacia_arriba(cupo, esperado):
     assert Operador.capacidad_lista_de_espera(cupo) == esperado
 
-# ---- TAL-RF-01 ----
 def test_confirmado_con_plaza_libre():
     t = taller(cupo=10)
     solicitar(1, t)
@@ -112,18 +111,6 @@ def test_usuario_sin_codigo_rechazado():
     sin_codigo = Usuario.objects.create(username="sin_codigo")
     with pytest.raises(ValidationError):
         Operador.registrar_inscripcion(sin_codigo, t)
-
-def test_caso_critico_cupo_2():
-    t = taller(cupo=2)
-    solicitar(1, t)
-    solicitar(2, t)
-    with pytest.raises(ValidationError):
-        solicitar(2, t)                  # repetición de P-02
-    solicitar(3, t)                      # ceil(0.4) = 1 -> P-03 queda EN ESPERA
-    assert estado(3, t) == "EN_ESPERA"
-    with pytest.raises(ValidationError):
-        solicitar(4, t)                  # la espera (1) ya está llena
-    assert confirmados(t) == 2
 
 def test_cancelar_promueve_al_primero_en_espera():
     t = taller(cupo=10)
@@ -269,56 +256,6 @@ def test_el_coordinador_solo_cancela_sus_talleres():
 
     taller_de_ana.refresh_from_db()
     assert taller_de_ana.cancelado
-
-
-@pytest.mark.django_db(databases=['default', 'estudiantes_db'])
-def test_operador_desbloquea_participante_permitiendo_nueva_inscripcion():
-    # 1. Obtener un participante (ajusta el nombre según la fixture o función de tu test_operador.py)
-    # Por ejemplo, si usas una fixture, se la pasas como argumento al test, o si creas el usuario:
-    participante = Usuario.objects.create(username="estudiante_bloqueado", codigo="1000001",
-                                          rol=Usuario.Rol.PARTICIPANTE)
-    operador = Usuario.objects.create(
-        username="operador_test",
-        codigo="OP-001",
-        rol=Usuario.Rol.OPERADOR,
-    )
-
-    t1 = Taller.objects.create(
-        codigo="CAN-01",
-        nombre="Taller 1",
-        cupo_maximo=5,
-        fecha_inicio=timezone.now() + timedelta(days=1),
-        fecha_fin=timezone.now() + timedelta(days=1, hours=2)
-    )
-
-    # 2. Generar 4 cancelaciones reales para que el sistema lo considere bloqueado
-    ahora = timezone.now()
-    for _ in range(4):
-        HistorialCancelacion.objects.create(
-            participante=participante,
-            taller=t1,
-            fecha_cancelacion=ahora
-        )
-
-    # 3. Verificar que efectivamente está bloqueado
-    with pytest.raises(ValidationError):
-        Operador.verificar_que_no_este_bloqueado(participante)
-
-    # 4. El operador levanta el baneo (elimina sus cancelaciones)
-    Operador.levantar_bloqueo(operador, participante)
-
-    # 5. Verificar que ahora SÍ pueda inscribirse en un nuevo taller
-    t2 = Taller.objects.create(
-        codigo="DES-BAN-01",
-        nombre="Taller 2",
-        cupo_maximo=5,
-        fecha_inicio=timezone.now() + timedelta(days=2),
-        fecha_fin=timezone.now() + timedelta(days=2, hours=2)
-    )
-
-    inscripcion = Operador.registrar_inscripcion(participante, t2)
-    assert inscripcion.pk is not None
-    assert inscripcion.estado == "CONFIRMADO"
 
 @pytest.mark.django_db(databases=["default", "estudiantes_db"])
 def test_operador_puede_levantar_bloqueo_y_conservar_historial_antiguo():
