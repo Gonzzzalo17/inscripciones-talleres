@@ -26,8 +26,8 @@ def editar_taller_para_pasado_manana(taller, nombre, cupo):
     # Edita el taller con la lógica real del coordinador,
     # moviéndolo a pasado mañana (en 48 horas, dura 2 horas).
     return Coordinador.editar_taller(taller.pk, nombre, cupo,
-                                     fecha_dentro_de_horas(48), fecha_dentro_de_horas(50))
-
+                                     fecha_dentro_de_horas(48), fecha_dentro_de_horas(50),
+                                     motivo="Cambio pedido por el coordinador")
 
 def inscribir_participante(taller, estado, posicion_espera=None):
     # Crea un participante nuevo y lo inscribe directo en la base de datos,
@@ -35,8 +35,6 @@ def inscribir_participante(taller, estado, posicion_espera=None):
     participante = Usuario.objects.create(username=f"participante{Usuario.objects.count()}")
     return Inscripcion.objects.create(participante=participante, taller=taller,
                                       estado=estado, posicion_espera=posicion_espera)
-
-
 
 def test_primer_taller_recibe_codigo_01():
     assert crear_taller_que_empieza_manana("Danza").codigo == "TAL-DAN-01"

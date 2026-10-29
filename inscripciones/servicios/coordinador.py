@@ -4,7 +4,7 @@ import unicodedata
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
-from inscripciones.models import Taller
+from inscripciones.models import Taller, TallerHistorial
 from inscripciones.servicios.operador import Operador
 
 PREFIJO = "TAL"
@@ -54,7 +54,11 @@ class Coordinador:
 
     @staticmethod
     @transaction.atomic
-    def editar_taller(taller_id, nombre, cupo_maximo, fecha_inicio, fecha_fin):
+    def editar_taller(taller_id, nombre, cupo_maximo, fecha_inicio, fecha_fin, motivo):
+        motivo = (motivo or "").strip()
+        if not motivo:
+            raise ValidationError("Debe proporcionar un motivo obligatorio para la edición del taller.")
+
         try:
             taller = Taller.objects.select_for_update().get(pk=taller_id)
         except Taller.DoesNotExist:
@@ -82,7 +86,15 @@ class Coordinador:
             raise ValidationError("La fecha de inicio no puede ser anterior a la actual.")
         if fecha_fin <= fecha_inicio:
             raise ValidationError("La hora de fin debe ser posterior a la de inicio.")
-
+        TallerHistorial.objects.create(
+            taller=taller,
+            motivo=motivo,
+            codigo_anterior=taller.codigo,
+            nombre_anterior=taller.nombre,
+            cupo_maximo_anterior=taller.cupo_maximo,
+            fecha_inicio_anterior=taller.fecha_inicio,
+            fecha_fin_anterior=taller.fecha_fin,
+        )
         taller.nombre = nombre
         taller.cupo_maximo = cupo_maximo
         taller.fecha_inicio = fecha_inicio
