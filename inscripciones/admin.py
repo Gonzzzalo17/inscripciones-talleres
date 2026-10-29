@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    Usuario, Coordinador, Operador, Participante, Instructor,
+    Usuario, Coordinador, Operador, Participante, Participante, Categoria, MotivoEdicion,
     EstudianteEstatico, Taller, Inscripcion, HistorialCancelacion
 )
 
@@ -32,8 +32,7 @@ class UsuarioAdmin(admin.ModelAdmin):
 admin.site.register(Coordinador)
 admin.site.register(Operador)
 admin.site.register(Participante)
-admin.site.register(Instructor)
+admin.site.register(Categoria)
+admin.site.register(MotivoEdicion)
 admin.site.register(HistorialCancelacion)
-from django.contrib import admin
 
-# Register your models here.

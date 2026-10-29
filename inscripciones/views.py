@@ -99,6 +99,7 @@ def historial_cancelaciones(request):
     # Puedes recibir el ID del participante por GET (ej: ?participante_id=5) o usar el usuario logueado
     participante_id = request.GET.get('participante_id')
 
+    participantes = Usuario.objects.filter(rol=Usuario.Rol.PARTICIPANTE)
     participante = None
     historial = []
     fin_bloqueo = None
@@ -116,6 +117,7 @@ def historial_cancelaciones(request):
             sigue_bloqueado = True
 
     contexto = {
+        'participantes': participantes,
         'participante': participante,
         'historial': historial,
         'fin_bloqueo': fin_bloqueo,
@@ -132,3 +134,38 @@ def ocupacion_taller(request, pk):
         'taller': taller,
         'ocupacion': ocupacion,
     })
+
+
+def editar_taller(request, pk):
+    taller = get_object_or_404(Taller, pk=pk)
+
+    if request.method == 'POST':
+        form = TallerForm(request.POST, instance=taller)
+        motivo = request.POST.get('motivo', '').strip()
+
+        if not motivo:
+            form.add_error(None, "Debe proporcionar un motivo obligatorio para la edición.")
+
+        if form.is_valid() and motivo:
+            try:
+                Coordinador.editar_taller(
+                    taller_id=taller.pk,
+                    nombre=form.cleaned_data['nombre'],
+                    cupo_maximo=form.cleaned_data['cupo_maximo'],
+                    fecha_inicio=form.cleaned_data['fecha_inicio'],
+                    fecha_fin=form.cleaned_data['fecha_fin'],
+                    motivo=motivo
+                )
+            except ValidationError as e:
+                error_msg = e.messages[0] if hasattr(e, 'messages') else str(e)
+                form.add_error(None, error_msg)
+            else:
+                return redirect('lista_talleres')
+    else:
+        form = TallerForm(instance=taller)
+
+    contexto = {
+        'form': form,
+        'taller': taller,
+    }
+    return render(request, 'inscripciones/editar_taller.html', contexto)
