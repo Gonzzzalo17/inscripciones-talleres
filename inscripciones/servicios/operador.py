@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
-from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion, Taller
+from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion, Taller, Categoria, MotivoEdicion
 from inscripciones.servicios.permisos import verificar_que_pueda_manejar_el_taller, verificar_que_sea_operador
 from inscripciones.servicios.notificaciones import notificar
 
@@ -286,6 +286,44 @@ class Operador:
         ).delete()
 
         return participante
+
+    @staticmethod
+    def agregar_categoria(usuario, nombre):
+        verificar_que_sea_operador(usuario)
+
+        nombre = nombre.strip()
+
+        if not nombre:
+            raise ValidationError(
+                "El nombre de la categoría no puede estar vacío."
+            )
+
+        if Categoria.objects.filter(nombre__iexact=nombre).exists():
+            raise ValidationError(
+                "Ya existe una categoría con ese nombre."
+            )
+
+        return Categoria.objects.create(nombre=nombre)
+
+    @staticmethod
+    def agregar_motivo_edicion(usuario, descripcion):
+        verificar_que_sea_operador(usuario)
+
+        descripcion = descripcion.strip()
+
+        if not descripcion:
+            raise ValidationError(
+                "La descripción del motivo no puede estar vacía."
+            )
+
+        if MotivoEdicion.objects.filter(
+            descripcion__iexact=descripcion
+        ).exists():
+            raise ValidationError(
+                "Ya existe un motivo con esa descripción."
+            )
+
+        return MotivoEdicion.objects.create(descripcion=descripcion)
     # --- MÉTODOS DE VALIDACIÓN ---
 
     @staticmethod
