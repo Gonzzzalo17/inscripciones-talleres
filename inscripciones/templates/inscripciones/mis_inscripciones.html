@@ -5,6 +5,8 @@
 {% block contenido %}
 <h1>Mis inscripciones</h1>
 
+{# HU-12: solo el operador elige a quién consultar; el participante ve directo las suyas #}
+{% if not es_participante %}
 <div class="caja">
     {# GET: el participante elegido viaja en la URL (?participante=<id>) #}
     <form method="get">
@@ -22,6 +24,7 @@
         <button type="submit" class="boton">Ver inscripciones</button>
     </form>
 </div>
+{% endif %}
 
 {% if participante_seleccionado %}
     {% if inscripciones %}
@@ -58,7 +61,7 @@
             </table>
         </div>
     {% else %}
-        <p class="vacio">Este participante no tiene inscripciones.</p>
+        <p class="vacio">Todavía no hay inscripciones.</p>
     {% endif %}
 {% endif %}
 

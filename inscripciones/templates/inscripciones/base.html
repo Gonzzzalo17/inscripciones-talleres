@@ -36,6 +36,8 @@
         header .marca { font-weight: 700; font-size: 1.1rem; }
         header nav a { color: white; text-decoration: none; margin-left: 1rem; opacity: 0.85; }
         header nav a:hover { opacity: 1; text-decoration: underline; }
+        header nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+        header .usuario { margin-left: 1rem; opacity: 0.85; font-size: 0.9rem; }  .form-salir { display: inline; margin: 0 0 0 1rem; }  .boton-salir { background: transparent; color: white; border: 1px solid white; border-radius: 6px; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.9rem; }
         main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
         h1 { color: var(--azul); margin-top: 0; }
 
@@ -85,12 +87,26 @@
 <body>
     <header>
         <span class="marca">Inscripciones a talleres</span>
+                {% if user.is_authenticated %}
         <nav>
+            {# HU-12: cada rol ve solo su menú #}
             <a href="{% url 'lista_talleres' %}">Talleres</a>
-            <a href="{% url 'crear_taller' %}">Crear taller</a>
-            <a href="{% url 'mis_inscripciones' %}">Mis inscripciones</a>
-            <a href="{% url 'historial_cancelaciones' %}">Historial de cancelaciones</a>
+            {% if user.rol == "COORDINADOR" or user.rol == "OPERADOR" %}
+                <a href="{% url 'crear_taller' %}">Crear taller</a>
+            {% endif %}
+            {% if user.rol == "PARTICIPANTE" or user.rol == "OPERADOR" %}
+                <a href="{% url 'mis_inscripciones' %}">Mis inscripciones</a>
+            {% endif %}
+            {% if user.rol == "OPERADOR" %}
+                <a href="{% url 'historial_cancelaciones' %}">Historial de cancelaciones</a>
+            {% endif %}
+            <span class="usuario">{{ user.get_full_name|default:user.username }} ({{ user.get_rol_display }})</span>
+            <form method="post" action="{% url 'logout' %}" class="form-salir">
+                {% csrf_token %}
+                <button type="submit" class="boton-salir">Salir</button>
+            </form>
         </nav>
+        {% endif %}
     </header>
 
     <main>

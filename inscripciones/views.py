@@ -6,8 +6,14 @@ from .models import Inscripcion, Taller, Usuario
 from .servicios.operador import Operador
 from .servicios.coordinador import Coordinador
 from django.utils import timezone
+from django.contrib.auth import login, logout
+from django.views.decorators.http import require_POST
+from django.http import HttpResponseForbidden
+from .acceso import solo_para, TODOS
+from .servicios.sesion import Sesion
 
 
+@solo_para(*TODOS)
 def lista_talleres(request):
     talleres = Taller.objects.annotate(
         ocupadas=Count('inscripciones', filter=Q(inscripciones__estado='CONFIRMADO')),
@@ -16,6 +22,7 @@ def lista_talleres(request):
     return render(request, 'inscripciones/lista_talleres.html', {'talleres': talleres})
 
 
+@solo_para(Usuario.Rol.COORDINADOR, Usuario.Rol.OPERADOR)
 def crear_taller(request):
     if request.method == 'POST':
         form = TallerForm(request.POST)
@@ -36,17 +43,23 @@ def crear_taller(request):
         form = TallerForm()
     return render(request, 'inscripciones/crear_taller.html', {'form': form})
 
-def solicitar_inscripcion(request   , pk):
+@solo_para(Usuario.Rol.PARTICIPANTE, Usuario.Rol.OPERADOR)
+def solicitar_inscripcion(request, pk):
     taller = get_object_or_404(Taller, pk=pk)
     participantes = Usuario.objects.filter(rol=Usuario.Rol.PARTICIPANTE).order_by('username')
+    # HU-12: el participante solo puede inscribirse a sí mismo; el operador elige a quién
+    es_participante = request.user.rol == Usuario.Rol.PARTICIPANTE
     error = None
     participante_seleccionado = ''
 
     if request.method == 'POST':
-        participante_seleccionado = request.POST.get('participante', '')
         participante = None
-        if participante_seleccionado.isdigit():
-            participante = participantes.filter(pk=participante_seleccionado).first()
+        if es_participante:
+            participante = request.user
+        else:
+            participante_seleccionado = request.POST.get('participante', '')
+            if participante_seleccionado.isdigit():
+                participante = participantes.filter(pk=participante_seleccionado).first()
 
         if participante is None:
             error = "Elige un participante de la lista."
@@ -64,19 +77,32 @@ def solicitar_inscripcion(request   , pk):
         'en_espera': taller.inscripciones.filter(estado='EN_ESPERA').count(),
         'limite_espera': Operador.capacidad_lista_de_espera(taller.cupo_maximo),
         'participantes': participantes,
+        'es_participante': es_participante,
         'error': error,
         'participante_seleccionado': participante_seleccionado,
     }
     return render(request, 'inscripciones/solicitar_inscripcion.html', contexto)
 
 
+@solo_para(*TODOS)
 def resultado_inscripcion(request, pk):
     inscripcion = get_object_or_404(Inscripcion, pk=pk)
+    # HU-12: un participante no puede ver la inscripción de otra persona
+    if request.user.rol == Usuario.Rol.PARTICIPANTE and inscripcion.participante != request.user:
+        return HttpResponseForbidden("No tienes permiso para ver esta página.")
     return render(request, 'inscripciones/resultado_inscripcion.html', {'inscripcion': inscripcion})
+
+
+@solo_para(Usuario.Rol.PARTICIPANTE, Usuario.Rol.OPERADOR)
 def mis_inscripciones(request):
     participantes = Usuario.objects.filter(rol=Usuario.Rol.PARTICIPANTE).order_by('username')
     inscripciones = []
-    participante_seleccionado = request.GET.get('participante', '')
+    # HU-12: el participante ve directo las suyas; el operador elige de la lista
+    es_participante = request.user.rol == Usuario.Rol.PARTICIPANTE
+    if es_participante:
+        participante_seleccionado = str(request.user.pk)
+    else:
+        participante_seleccionado = request.GET.get('participante', '')
 
     if participante_seleccionado.isdigit():
         participante = participantes.filter(pk=participante_seleccionado).first()
@@ -86,11 +112,13 @@ def mis_inscripciones(request):
     contexto = {
         'participantes': participantes,
         'inscripciones': inscripciones,
+        'es_participante': es_participante,
         'participante_seleccionado': participante_seleccionado,
     }
     return render(request, 'inscripciones/mis_inscripciones.html', contexto)
 
 
+@solo_para(Usuario.Rol.OPERADOR)
 def historial_cancelaciones(request):
     """
     Vista para consultar el historial de cancelaciones de un participante
@@ -126,6 +154,7 @@ def historial_cancelaciones(request):
 
     return render(request, 'inscripciones/historial_cancelaciones.html', contexto)
 
+@solo_para(*TODOS)
 def ocupacion_taller(request, pk):
     # HU-07: consultar la ocupación de un taller (solo lectura, no cambia datos)
     taller = get_object_or_404(Taller, pk=pk)
@@ -136,6 +165,7 @@ def ocupacion_taller(request, pk):
     })
 
 
+@solo_para(Usuario.Rol.COORDINADOR, Usuario.Rol.OPERADOR)
 def editar_taller(request, pk):
     taller = get_object_or_404(Taller, pk=pk)
 
@@ -169,3 +199,28 @@ def editar_taller(request, pk):
         'taller': taller,
     }
     return render(request, 'inscripciones/editar_taller.html', contexto)
+
+def iniciar_sesion(request):
+    # HU-12 / CU-20: pantalla de entrar con código y contraseña
+    if request.user.is_authenticated:
+        return redirect(Sesion.pantalla_de_inicio(request.user))
+
+    error = None
+    codigo = ''
+    if request.method == 'POST':
+        codigo = request.POST.get('codigo', '')
+        try:
+            usuario, pantalla = Sesion.iniciar_sesion(codigo, request.POST.get('contrasena', ''))
+        except ValidationError as e:
+            error = e.messages[0]
+        else:
+            login(request, usuario)  # guarda la sesión en el navegador
+            return redirect(request.GET.get('next') or pantalla)
+
+    return render(request, 'inscripciones/login.html', {'error': error, 'codigo': codigo})
+
+
+@require_POST
+def cerrar_sesion(request):
+    logout(request)
+    return redirect('login')

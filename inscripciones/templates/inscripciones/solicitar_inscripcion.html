@@ -30,6 +30,10 @@
 <div class="caja">
     <form method="post">
         {% csrf_token %}
+        {% if es_participante %}
+            {# HU-12: el participante se inscribe a sí mismo, sin elegir de una lista #}
+            <p>Te vas a inscribir como <strong>{{ user.get_full_name|default:user.username }}</strong>.</p>
+        {% else %}
         <div class="campo">
             <label for="participante">Participante</label>
             <select id="participante" name="participante" required>
@@ -41,6 +45,7 @@
                 {% endfor %}
             </select>
         </div>
+        {% endif %}
 
         {% if ocupadas < taller.cupo_maximo %}
             <p class="ayuda">Hay plazas libres: si la solicitud es válida, la inscripción queda confirmada.</p>
