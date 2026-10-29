@@ -1,6 +1,6 @@
 from django.db import migrations
 
-CATEGORIAS_INICIALES = ["Deporte", "Canto", "Danza", "Artes Marciales", "Artes Literatura"]
+CATEGORIAS_INICIALES = ["Deporte", "Canto", "Danza", "Artes Marciales", "Literatura"]
 MOTIVOS_INICIALES = [
     "Cambio de fecha u horario porque el ambiente no está disponible",
     "Aumento de cupo por alta demanda de inscripciones",
