@@ -20,7 +20,6 @@ class Usuario(AbstractUser):
         COORDINADOR = 'COORDINADOR', 'Coordinador'
         OPERADOR = 'OPERADOR', 'Operador'
         PARTICIPANTE = 'PARTICIPANTE', 'Participante'
-        INSTRUCTOR = 'INSTRUCTOR', 'Instructor del Taller'
 
     rol = models.CharField(
         max_length=20,
@@ -54,24 +53,47 @@ class Participante(models.Model):
     def __str__(self):
         return f"Participante: {self.usuario.username}"
 
-
-class Instructor(models.Model):
-    usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, primary_key=True)
+# 3. Parametrizaciones: listas que el operador puede ampliar sin tocar el código
+class Categoria(models.Model):
+    # Deporte, Canto, Baile... (el participante busca talleres por categoría)
+    nombre = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
-        return f"Instructor: {self.usuario.username}"
+        return self.nombre
 
 
-# 3. Modelos de Inscripción e Historial (Andrea)
+class MotivoEdicion(models.Model):
+    # Razones que el coordinador o el operador eligen al editar un taller
+    descripcion = models.CharField(max_length=150, unique=True)
+
+    def __str__(self):
+        return self.descripcion
+
+
+# 4. Modelos de Inscripción e Historial
 class Taller(models.Model):
+    class Estado(models.TextChoices):
+        PENDIENTE = 'PENDIENTE', 'Pendiente de aprobación'
+        APROBADO = 'APROBADO', 'Aprobado'
+        RECHAZADO = 'RECHAZADO', 'Rechazado'
+
     codigo = models.CharField(max_length=20, unique=True)
     nombre = models.CharField(max_length=100)
+    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, null=True, related_name='talleres')
+    # Coordinador del taller que lo solicitó (vacío si lo creó el operador)
+    coordinador = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True,
+                                    related_name='talleres_a_cargo')
+    # Lo solicitado por un coordinador empieza PENDIENTE; lo que crea el operador queda APROBADO
+    estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.APROBADO)
+    # CU-17: un taller cancelado ya no recibe inscripciones; se guarda para no perder su historial
+    cancelado = models.BooleanField(default=False)
     cupo_maximo = models.PositiveIntegerField(validators=[MinValueValidator(4), MaxValueValidator(40)])
     fecha_inicio = models.DateTimeField()
     fecha_fin = models.DateTimeField()
 
     def __str__(self):
         return self.nombre
+
 class Inscripcion(models.Model):
     ESTADOS = [
         ('CONFIRMADO', 'Confirmado'),
