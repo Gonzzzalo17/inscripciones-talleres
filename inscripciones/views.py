@@ -10,6 +10,7 @@ from django.contrib.auth import login, logout
 from django.views.decorators.http import require_POST
 from django.http import HttpResponseForbidden
 from django.contrib import messages
+from django.utils.http import url_has_allowed_host_and_scheme
 from .acceso import solo_para, TODOS
 from .servicios.sesion import Sesion
 from .servicios.participante import Participante
@@ -23,8 +24,10 @@ def lista_talleres(request):
     ).order_by('fecha_inicio')
     # El participante solo ve los talleres abiertos: aprobados y no cancelados
     if request.user.rol == Usuario.Rol.PARTICIPANTE:
-        talleres = talleres.filter(estado=Taller.Estado.APROBADO, cancelado=False)
-    return render(request, 'inscripciones/lista_talleres.html', {'talleres': talleres})
+        talleres = talleres.filter(estado=Taller.Estado.APROBADO, cancelado=False,
+                                   fecha_inicio__gt=timezone.now())
+    return render(request, 'inscripciones/lista_talleres.html',
+                  {'talleres': talleres, 'ahora': timezone.now()})
 
 
 @solo_para(Usuario.Rol.COORDINADOR, Usuario.Rol.OPERADOR)
@@ -91,7 +94,7 @@ def solicitar_inscripcion(request, pk):
     return render(request, 'inscripciones/solicitar_inscripcion.html', contexto)
 
 
-@solo_para(*TODOS)
+@solo_para(Usuario.Rol.PARTICIPANTE, Usuario.Rol.OPERADOR)
 def resultado_inscripcion(request, pk):
     inscripcion = get_object_or_404(Inscripcion, pk=pk)
     # HU-12: un participante no puede ver la inscripción de otra persona
@@ -121,6 +124,7 @@ def mis_inscripciones(request):
         'inscripciones': inscripciones,
         'es_participante': es_participante,
         'participante_seleccionado': participante_seleccionado,
+        'ahora': timezone.now(),
     }
     return render(request, 'inscripciones/mis_inscripciones.html', contexto)
 
@@ -140,7 +144,7 @@ def historial_cancelaciones(request):
     fin_bloqueo = None
     sigue_bloqueado = False
 
-    if participante_id:
+    if participante_id and participante_id.isdigit():
         participante = get_object_or_404(Usuario, pk=participante_id, rol=Usuario.Rol.PARTICIPANTE)
 
         # 1. Obtener historial usando el método del Operador
@@ -223,7 +227,11 @@ def iniciar_sesion(request):
             error = e.messages[0]
         else:
             login(request, usuario)  # guarda la sesión en el navegador
-            return redirect(request.GET.get('next') or pantalla)
+            siguiente = request.GET.get('next', '')
+            # Solo vuelve a una página de este mismo sitio (evita mandar a sitios falsos)
+            if not url_has_allowed_host_and_scheme(siguiente, allowed_hosts={request.get_host()}):
+                siguiente = pantalla
+            return redirect(siguiente)
 
     return render(request, 'inscripciones/login.html', {'error': error, 'codigo': codigo})
 

@@ -41,7 +41,11 @@
 </div>
 
 <p style="margin-top: 1.5rem;">
-    <a class="boton" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a>
+        {% if taller.estado == "APROBADO" and not taller.cancelado %}
+        {% if user.rol == "PARTICIPANTE" or user.rol == "OPERADOR" %}
+            <a class="boton" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a>
+        {% endif %}
+    {% endif %}
     <a class="boton secundario" href="{% url 'lista_talleres' %}">Volver a talleres</a>
 </p>
 {% endblock %}

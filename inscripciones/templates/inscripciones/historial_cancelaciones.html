@@ -28,6 +28,11 @@
         <div class="aviso rechazo">
             <strong>Bloqueado hasta {{ fin_bloqueo|date:"d/m/Y H:i" }}</strong> por cancelar más de 3 veces en 72 horas.
         </div>
+        <form method="post" action="{% url 'levantar_bloqueo' participante.pk %}"
+              onsubmit="return confirm('¿Levantar el bloqueo de este participante?');">
+            {% csrf_token %}
+            <button type="submit" class="boton">Levantar bloqueo</button>
+        </form>
     {% endif %}
 
     {% if historial %}

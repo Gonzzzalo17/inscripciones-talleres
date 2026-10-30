@@ -41,10 +41,15 @@
                                     <a class="boton secundario" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a>
                                 {% endif %}
                             {% endif %}
-                            {# Editar: el operador cualquier taller, el coordinador solo los suyos #}
-                            {% if not taller.cancelado %}
+                            {# Editar y Cancelar taller: el operador cualquiera, el coordinador solo los suyos, y solo si no empezó #}
+                            {% if not taller.cancelado and taller.fecha_inicio > ahora %}
                                 {% if user.rol == "OPERADOR" or user.rol == "COORDINADOR" and taller.coordinador_id == user.pk %}
                                     <a class="boton secundario" href="{% url 'editar_taller' taller.pk %}">Editar</a>
+                                    <form method="post" action="{% url 'cancelar_taller' taller.pk %}" style="display:inline"
+                                          onsubmit="return confirm('¿Cancelar el taller? Todos sus inscritos quedarán cancelados.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="boton secundario">Cancelar taller</button>
+                                    </form>
                                 {% endif %}
                             {% endif %}
                             {# El operador decide los talleres que pidió un coordinador #}
