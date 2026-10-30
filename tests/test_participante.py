@@ -84,3 +84,17 @@ def test_sin_elegir_categoria_ve_todos_los_talleres_disponibles():
     Taller.objects.filter(pk=coro.pk).update(categoria=canto)
 
     assert list(Participante.buscar_talleres_por_categoria()) == [coro, salsa]
+
+def test_la_pantalla_por_categoria_muestra_solo_los_talleres_de_esa_categoria(client, ana):
+    baile = Categoria.objects.get_or_create(nombre="Baile")[0]
+    canto = Categoria.objects.get_or_create(nombre="Canto")[0]
+    salsa = crear_taller_que_empieza_en_dias("TAL-SAL-01", 2)
+    coro = crear_taller_que_empieza_en_dias("TAL-COR-01", 2)
+    Taller.objects.filter(pk=salsa.pk).update(categoria=baile)
+    Taller.objects.filter(pk=coro.pk).update(categoria=canto)
+    client.force_login(ana)
+
+    respuesta = client.get("/talleres/por-categoria/", {"categoria": baile.pk})
+
+    assert respuesta.status_code == 200
+    assert list(respuesta.context["talleres"]) == [salsa]
