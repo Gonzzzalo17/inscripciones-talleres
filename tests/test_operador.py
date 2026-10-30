@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import connections
 from django.utils import timezone
 from inscripciones.servicios.coordinador import Coordinador
-from inscripciones.models import HistorialCancelacion, Inscripcion, Taller, Usuario, Notificacion, Categoria
+from inscripciones.models import HistorialCancelacion, Inscripcion, Taller, Usuario, Notificacion, Categoria, HistorialBloqueo
 from inscripciones.servicios.operador import Operador
 
 pytestmark = pytest.mark.django_db(databases=["default", "estudiantes_db"])
@@ -257,69 +257,77 @@ def test_el_coordinador_solo_cancela_sus_talleres():
     taller_de_ana.refresh_from_db()
     assert taller_de_ana.cancelado
 
+
 @pytest.mark.django_db(databases=["default", "estudiantes_db"])
 def test_operador_puede_levantar_bloqueo_y_conservar_historial_antiguo():
-        participante = Usuario.objects.create(
-            username="estudiante_bloqueado",
-            codigo="1000001",
-            rol=Usuario.Rol.PARTICIPANTE,
-        )
-        operador = Usuario.objects.create(
-            username="operador_historial_test",
-            codigo="OP-002",
-            rol=Usuario.Rol.OPERADOR,
-        )
+    participante = Usuario.objects.create(
+        username="estudiante_bloqueado",
+        codigo="1000001",
+        rol=Usuario.Rol.PARTICIPANTE,
+    )
+    operador = Usuario.objects.create(
+        username="operador_historial_test",
+        codigo="OP-002",
+        rol=Usuario.Rol.OPERADOR,
+    )
 
-        taller = Taller.objects.create(
-            codigo="BAN-TEST-01",
-            nombre="Taller de prueba",
-            cupo_maximo=5,
-            fecha_inicio=timezone.now() + timedelta(days=2),
-            fecha_fin=timezone.now() + timedelta(days=2, hours=2),
-            estado=Taller.Estado.APROBADO,
-        )
+    taller = Taller.objects.create(
+        codigo="BAN-TEST-01",
+        nombre="Taller de prueba",
+        cupo_maximo=5,
+        fecha_inicio=timezone.now() + timedelta(days=2),
+        fecha_fin=timezone.now() + timedelta(days=2, hours=2),
+        estado=Taller.Estado.APROBADO,
+    )
 
-        ahora = timezone.now()
+    ahora = timezone.now()
 
-        # Una cancelación antigua que debe conservarse.
-        antigua = HistorialCancelacion.objects.create(
+    # Una cancelación antigua que debe conservarse.
+    antigua = HistorialCancelacion.objects.create(
+        participante=participante,
+        taller=taller,
+    )
+    HistorialCancelacion.objects.filter(pk=antigua.pk).update(
+        fecha_cancelacion=ahora - timedelta(days=5)
+    )
+
+    # Cuatro cancelaciones recientes que provocan el bloqueo.
+    for _ in range(4):
+        HistorialCancelacion.objects.create(
             participante=participante,
             taller=taller,
         )
-        HistorialCancelacion.objects.filter(pk=antigua.pk).update(
-            fecha_cancelacion=ahora - timedelta(days=5)
-        )
 
-        # Cuatro cancelaciones recientes que provocan el bloqueo.
-        for _ in range(4):
-            HistorialCancelacion.objects.create(
-                participante=participante,
-                taller=taller,
-            )
-
-        with pytest.raises(ValidationError):
-            Operador.verificar_que_no_este_bloqueado(participante)
-
-        Operador.levantar_bloqueo(operador, participante)
-
-        # Ya no debe estar bloqueado.
+    with pytest.raises(ValidationError):
         Operador.verificar_que_no_este_bloqueado(participante)
 
-        # El historial antiguo debe seguir existiendo.
-        assert HistorialCancelacion.objects.filter(
-            pk=antigua.pk
-        ).exists()
+    Operador.levantar_bloqueo(operador, participante)
 
-        # Las cancelaciones recientes deben haberse eliminado.
-        assert not HistorialCancelacion.objects.filter(
-            participante=participante,
-            fecha_cancelacion__gte=ahora - timedelta(hours=72),
-        ).exists()
+    # Ya no debe estar bloqueado.
+    Operador.verificar_que_no_este_bloqueado(participante)
 
-        # La inscripción debe funcionar si el participante
-        # también figura en el padrón estático.
-        inscripcion = Operador.registrar_inscripcion(participante, taller)
-        assert inscripcion.estado == "CONFIRMADO"
+    # El historial antiguo debe seguir existiendo.
+    assert HistorialCancelacion.objects.filter(
+        pk=antigua.pk
+    ).exists()
+
+    # El historial de cancelaciones debe conservarse.
+    assert HistorialCancelacion.objects.filter(
+        participante=participante,
+        fecha_cancelacion__gte=ahora - timedelta(hours=72),
+    ).count() == 4
+
+    # Debe existir el registro del levantamiento.
+    assert HistorialBloqueo.objects.filter(
+        participante=participante,
+        operador=operador
+    ).exists()
+
+    # La inscripción debe funcionar si el participante
+    # también figura en el padrón estático.
+    inscripcion = Operador.registrar_inscripcion(participante, taller)
+    assert inscripcion.estado == "CONFIRMADO"
+
 def test_operador_crea_taller_aprobado_sin_coordinador():
     operador = Usuario.objects.create(
         username="operador_creador_test",
