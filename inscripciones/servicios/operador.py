@@ -20,6 +20,8 @@ mensaje_bloqueo = ("Quedaste bloqueado hasta el {fin:%d/%m %H:%M} por cancelar m
 mensaje_taller_aprobado = "Tu taller {taller} fue aprobado y ya recibe inscripciones."
 mensaje_taller_rechazado = "Tu taller {taller} fue rechazado. Puedes corregirlo y volver a enviarlo."
 mensaje_taller_cancelado = "El taller {taller} fue cancelado. Tu inscripción quedó anulada."
+mensaje_edicion_rechazada = "El cambio que pediste para el taller {taller} no fue aprobado. El taller sigue con sus datos anteriores."
+mensaje_taller_vuelve_a_sus_datos = "El taller {taller} sigue con su horario original: empieza el {inicio:%d/%m %H:%M}."
 
 limite_maximo_cancelaciones = 3
 horas_en_que_se_cuentan_cancelaciones = 72
@@ -160,7 +162,10 @@ class Operador:
                 fin=fin_bloqueo, limite=limite_maximo_cancelaciones,
                 horas=horas_en_que_se_cuentan_cancelaciones))
             # 1. Si estaba en listas de espera, se le saca de todo el sistema
-            inscripciones_espera = Inscripcion.objects.filter(participante=participante, estado='EN_ESPERA')
+            # Solo talleres que todavía no empezaron: lo pasado o en curso no se toca.
+            ahora = timezone.now()
+            inscripciones_espera = Inscripcion.objects.filter(participante=participante, estado='EN_ESPERA',
+                                                              taller__fecha_inicio__gt=ahora)
             for espera in inscripciones_espera:
                 taller_espera = espera.taller
                 espera.estado = 'CANCELADO'
@@ -169,7 +174,8 @@ class Operador:
                 cls.actualizar_posiciones_lista_de_espera(taller_espera)
 
             # 2. Pierde todo lo anterior (sus talleres confirmados pasan a cancelados)
-            inscripciones_confirmadas = Inscripcion.objects.filter(participante=participante, estado='CONFIRMADO')
+            inscripciones_confirmadas = Inscripcion.objects.filter(participante=participante, estado='CONFIRMADO',
+                                                                   taller__fecha_inicio__gt=ahora)
             for conf in inscripciones_confirmadas:
                 taller_conf = conf.taller
                 conf.estado = 'CANCELADO'
@@ -192,7 +198,7 @@ class Operador:
             if promovido is None:
                 break
             promovidos.append(promovido)
-        cls.actualizar_posiciones_lista_de_espera(taller)  # <- renumerar al final
+        cls.actualizar_posiciones_lista_de_espera(taller)  # renumera la espera al terminar
         return promovidos
 
     @staticmethod
@@ -235,14 +241,42 @@ class Operador:
     def decidir_solicitud_de_taller(operador, taller, nuevo_estado):
         verificar_que_sea_operador(operador)
         taller = Taller.objects.select_for_update().get(pk=taller.pk)
+        if taller.cancelado:
+            raise ValidationError("El taller fue cancelado: ya no se puede aceptar ni rechazar.")
         if taller.estado != Taller.Estado.PENDIENTE:
             raise ValidationError("Solo se puede aceptar o rechazar un taller que está pendiente.")
+
+        mensaje = mensaje_taller_aprobado if nuevo_estado == Taller.Estado.APROBADO else mensaje_taller_rechazado
+        tiene_inscritos = taller.inscripciones.filter(estado__in=['CONFIRMADO', 'EN_ESPERA']).exists()
+        if nuevo_estado == Taller.Estado.RECHAZADO and tiene_inscritos:
+            # Solo un taller ya aprobado puede tener inscritos: lo que se rechaza es la EDICIÓN que hizo
+            # el coordinador. El taller vuelve a sus datos anteriores y sigue aprobado; nadie pierde su plaza.
+            Operador.volver_a_los_datos_anteriores(taller)
+            nuevo_estado = Taller.Estado.APROBADO
+            mensaje = mensaje_edicion_rechazada
+
         taller.estado = nuevo_estado
         taller.save(update_fields=["estado"])
         if taller.coordinador is not None:
-            mensaje = mensaje_taller_aprobado if nuevo_estado == Taller.Estado.APROBADO else mensaje_taller_rechazado
             notificar(taller.coordinador, taller, mensaje.format(taller=taller.nombre))
         return taller
+
+    @staticmethod
+    def volver_a_los_datos_anteriores(taller):
+        # Toma los datos que había antes de la última edición (los guarda TallerHistorial al editar).
+        anterior = taller.historial_cambios.order_by('-fecha_modificacion', '-id').first()
+        if anterior is None:
+            return
+        confirmados = taller.inscripciones.filter(estado='CONFIRMADO').count()
+        taller.fecha_inicio = anterior.fecha_inicio_anterior
+        taller.fecha_fin = anterior.fecha_fin_anterior
+        # Si con la edición subió el cupo y entraron personas de la espera, el cupo no baja de los confirmados.
+        taller.cupo_maximo = max(anterior.cupo_maximo_anterior, confirmados)
+        taller.save(update_fields=["fecha_inicio", "fecha_fin", "cupo_maximo"])
+        Operador.promover_hasta_llenar(taller)
+        for inscripcion in taller.inscripciones.filter(estado__in=['CONFIRMADO', 'EN_ESPERA']).select_related("participante"):
+            notificar(inscripcion.participante, taller,
+                      mensaje_taller_vuelve_a_sus_datos.format(taller=taller.nombre, inicio=taller.fecha_inicio))
 
     @staticmethod
     @transaction.atomic
@@ -364,7 +398,7 @@ class Operador:
 
         hay_cruce = Inscripcion.objects.filter(
             participante=participante,
-            estado='CONFIRMADO',
+            estado__in=['CONFIRMADO', 'EN_ESPERA'],
             taller__fecha_inicio__lt=taller.fecha_fin,
             taller__fecha_fin__gt=taller.fecha_inicio
         ).exists()
