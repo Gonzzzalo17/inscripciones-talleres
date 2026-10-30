@@ -1,0 +1,104 @@
+
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Gestionar categorías y motivos{% endblock %}
+
+{% block contenido %}
+<h1>Gestionar categorías y motivos</h1>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="aviso">
+            <p>{{ message }}</p>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="caja">
+    <h2>Agregar categoría</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="tipo" value="categoria">
+
+        <div class="campo">
+            <label for="nombre">Nombre de la categoría</label>
+            <input type="text" id="nombre" name="nombre"
+                   maxlength="100" required>
+        </div>
+
+        <button type="submit" class="boton">Agregar categoría</button>
+    </form>
+</div>
+
+<div class="caja">
+    <h2>Categorías registradas</h2>
+
+    {% if categorias %}
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for categoria in categorias %}
+                        <tr>
+                            <td>{{ categoria.nombre }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="vacio">Todavía no hay categorías registradas.</p>
+    {% endif %}
+</div>
+
+<div class="caja">
+    <h2>Agregar motivo de edición</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="tipo" value="motivo">
+
+        <div class="campo">
+            <label for="descripcion">Descripción del motivo</label>
+            <input type="text" id="descripcion" name="descripcion"
+                   maxlength="255" required>
+        </div>
+
+        <button type="submit" class="boton">Agregar motivo</button>
+    </form>
+</div>
+
+<div class="caja">
+    <h2>Motivos registrados</h2>
+
+    {% if motivos %}
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for motivo in motivos %}
+                        <tr>
+                            <td>{{ motivo.descripcion }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="vacio">Todavía no hay motivos registrados.</p>
+    {% endif %}
+</div>
+
+<a class="boton secundario" href="{% url 'lista_talleres' %}">
+    Volver a talleres
+</a>
+{% endblock %}

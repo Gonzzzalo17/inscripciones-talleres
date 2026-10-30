@@ -1,0 +1,71 @@
+
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Talleres pendientes{% endblock %}
+
+{% block contenido %}
+<h1>Talleres pendientes de aprobación</h1>
+
+{% if talleres %}
+    <div class="tabla-contenedor">
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Coordinador</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Cupo máximo</th>
+                    <th>Plazas ocupadas</th>
+                    <th>En espera</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for taller in talleres %}
+                    <tr>
+                        <td>{{ taller.codigo }}</td>
+                        <td>{{ taller.nombre }}</td>
+                        <td>{{ taller.categoria }}</td>
+                        <td>{{ taller.coordinador.get_full_name|default:taller.coordinador.username }}</td>
+                        <td>{{ taller.fecha_inicio|date:"d/m/Y H:i" }}</td>
+                        <td>{{ taller.fecha_fin|date:"d/m/Y H:i" }}</td>
+                        <td>{{ taller.cupo_maximo }}</td>
+                        <td>{{ taller.ocupadas }}</td>
+                        <td>{{ taller.en_espera }}</td>
+                        <td>
+                            <form method="post"
+                                  action="{% url 'decidir_taller' taller.pk %}"
+                                  onsubmit="return confirm('¿Estás seguro de realizar esta decisión?');">
+                                {% csrf_token %}
+
+                                <button type="submit"
+                                        name="decision"
+                                        value="aprobar"
+                                        class="boton">
+                                    Aprobar
+                                </button>
+
+                                <button type="submit"
+                                        name="decision"
+                                        value="rechazar"
+                                        class="boton secundario">
+                                    Rechazar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <p class="vacio">No hay talleres pendientes de aprobación.</p>
+{% endif %}
+
+<a class="boton secundario" href="{% url 'lista_talleres' %}">
+    Volver a talleres
+</a>
+{% endblock %}

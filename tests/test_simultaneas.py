@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from datetime import timedelta
 
 import pytest
-from django.db import close_old_connections, connections
+from django.db import  connections
 from django.db.models.query import QuerySet
 from django.utils import timezone
 
@@ -51,9 +51,11 @@ def pedir_al_mismo_tiempo(personas, taller):
     salida = threading.Barrier(len(personas))
 
     def pedir(persona):
-        salida.wait()
-        Operador.registrar_inscripcion(persona, taller)
-        close_old_connections()
+        try:
+            salida.wait()
+            Operador.registrar_inscripcion(persona, taller)
+        finally:
+            connections.close_all()
 
     hilos = [threading.Thread(target=pedir, args=(persona,)) for persona in personas]
     for hilo in hilos:
@@ -102,6 +104,8 @@ def test_carga_solicitudes_simultaneas_respeta_limite_cupo_y_espera():
             return Operador.registrar_inscripcion(participante, taller)
         except ValidationError:
             return None
+        finally:
+            connections.close_all()
 
     # 4. Peticiones concurrentes
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:

@@ -121,6 +121,25 @@ class HistorialCancelacion(models.Model):
     def __str__(self):
         return f"Cancelación: {self.participante.username} - {self.taller}"
 
+class HistorialBloqueo(models.Model):
+    participante = models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name='historial_bloqueos'
+    )
+    operador = models.ForeignKey(
+        Usuario,
+        on_delete=models.PROTECT,
+        related_name='bloqueos_levantados'
+    )
+    fecha_levantamiento = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return (
+            f"Bloqueo levantado a {self.participante.username} "
+            f"por {self.operador.username}"
+        )
+
 class Notificacion(models.Model):
     # HU-06: mensaje que el sistema genera para el participante
     participante = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='notificaciones')
@@ -143,3 +162,4 @@ class TallerHistorial(models.Model):
 
     def __str__(self):
         return f"Edición de {self.taller.nombre} - {self.fecha_modificacion:%Y-%m-%d %H:%M}"
+

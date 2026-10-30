@@ -4,7 +4,16 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
-from inscripciones.models import Inscripcion, HistorialCancelacion, EstudianteEstatico, Notificacion, Taller, Categoria, MotivoEdicion
+from inscripciones.models import (
+    Inscripcion,
+    HistorialCancelacion,
+    HistorialBloqueo,
+    EstudianteEstatico,
+    Notificacion,
+    Taller,
+    Categoria,
+    MotivoEdicion,
+)
 from inscripciones.servicios.permisos import verificar_que_pueda_manejar_el_taller, verificar_que_sea_operador
 from inscripciones.servicios.notificaciones import notificar
 
@@ -302,22 +311,26 @@ class Operador:
 
     @staticmethod
     @transaction.atomic
-    def levantar_bloqueo(operador,participante):
+    def levantar_bloqueo(operador, participante):
         """
-        Levanta anticipadamente el bloqueo eliminando únicamente
-        las cancelaciones de las últimas 72 horas.
-        Conserva el historial anterior.
+        Levanta anticipadamente un bloqueo activo sin eliminar
+        el historial de cancelaciones.
         """
         verificar_que_sea_operador(operador)
 
-        limite = timezone.now() - timedelta(
-            hours=horas_en_que_se_cuentan_cancelaciones
+        fin_del_bloqueo = Operador.calcular_fin_del_bloqueo(
+            participante
         )
 
-        HistorialCancelacion.objects.filter(
+        if fin_del_bloqueo is None or fin_del_bloqueo <= timezone.now():
+            raise ValidationError(
+                "El participante no tiene un bloqueo activo."
+            )
+
+        HistorialBloqueo.objects.create(
             participante=participante,
-            fecha_cancelacion__gte=limite,
-        ).delete()
+            operador=operador
+        )
 
         return participante
 
@@ -407,19 +420,54 @@ class Operador:
 
     @staticmethod
     def calcular_fin_del_bloqueo(participante):
-        # la cancelación que supera el máximo dentro de 72 horas bloquea 24 horas desde ella.
-        # Devuelve cuándo termina el último bloqueo, o None si nunca lo tuvo.
-        fechas_de_cancelacion = list(HistorialCancelacion.objects
-                                     .filter(participante=participante)
-                                     .order_by("fecha_cancelacion")
-                                     .values_list("fecha_cancelacion", flat=True))
+        fechas_de_cancelacion = list(
+            HistorialCancelacion.objects
+            .filter(participante=participante)
+            .values_list("fecha_cancelacion", flat=True)
+        )
+
+        fechas_de_levantamiento = list(
+            HistorialBloqueo.objects
+            .filter(participante=participante)
+            .values_list("fecha_levantamiento", flat=True)
+        )
+
+        eventos = [
+                      (fecha, "cancelacion")
+                      for fecha in fechas_de_cancelacion
+                  ] + [
+                      (fecha, "levantamiento")
+                      for fecha in fechas_de_levantamiento
+                  ]
+
+        eventos.sort(key=lambda evento: evento[0])
+
+        cancelaciones_recientes = []
         fin_del_bloqueo = None
-        for fecha_cancelacion in fechas_de_cancelacion:
-            inicio_del_periodo = fecha_cancelacion - timedelta(hours=horas_en_que_se_cuentan_cancelaciones)
-            cancelaciones_en_el_periodo = [otra_fecha for otra_fecha in fechas_de_cancelacion
-                                           if inicio_del_periodo < otra_fecha <= fecha_cancelacion]
-            if len(cancelaciones_en_el_periodo) > limite_maximo_cancelaciones:
-                fin_del_bloqueo = fecha_cancelacion + timedelta(hours=horas_que_dura_el_bloqueo)
+
+        for fecha, tipo in eventos:
+            if tipo == "levantamiento":
+                cancelaciones_recientes = []
+                fin_del_bloqueo = None
+                continue
+
+            inicio_periodo = fecha - timedelta(
+                hours=horas_en_que_se_cuentan_cancelaciones
+            )
+
+            cancelaciones_recientes = [
+                otra_fecha
+                for otra_fecha in cancelaciones_recientes
+                if inicio_periodo < otra_fecha <= fecha
+            ]
+
+            cancelaciones_recientes.append(fecha)
+
+            if len(cancelaciones_recientes) > limite_maximo_cancelaciones:
+                fin_del_bloqueo = fecha + timedelta(
+                    hours=horas_que_dura_el_bloqueo
+                )
+
         return fin_del_bloqueo
 
     @classmethod
