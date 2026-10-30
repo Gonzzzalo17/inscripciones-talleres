@@ -1,18 +1,9 @@
-
 {% extends "inscripciones/base.html" %}
 
 {% block titulo %}Gestionar categorías y motivos{% endblock %}
 
 {% block contenido %}
 <h1>Gestionar categorías y motivos</h1>
-
-{% if messages %}
-    {% for message in messages %}
-        <div class="aviso">
-            <p>{{ message }}</p>
-        </div>
-    {% endfor %}
-{% endif %}
 
 <div class="caja">
     <h2>Agregar categoría</h2>
