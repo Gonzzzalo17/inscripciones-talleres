@@ -6,6 +6,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from inscripciones.models import Taller, TallerHistorial, Usuario, MotivoEdicion
 from inscripciones.servicios.operador import Operador
+from datetime import timedelta
 
 PREFIJO = "TAL"
 PALABRAS_VACIAS = {"taller", "talleres", "clase", "clases", "de", "del", "la", "el", "los", "las","como","dejar","ser"}
@@ -43,10 +44,27 @@ class Coordinador:
                 "El usuario no tiene permisos para crear talleres."
             )
 
-        if cupo_maximo < 4 or cupo_maximo > 40:
-            raise ValidationError("El cupo máximo del taller debe estar entre 4 y 40 participantes.")
+        ahora = timezone.now()
+
+        if not 4 <= cupo_maximo <= 40:
+            raise ValidationError(
+                "El cupo máximo del taller debe estar entre 4 y 40 participantes."
+            )
+
+        if fecha_inicio <= ahora:
+            raise ValidationError(
+                "La fecha y hora de inicio del taller debe ser futura."
+            )
+
         if fecha_fin <= fecha_inicio:
-            raise ValidationError("La hora de fin debe ser posterior a la de inicio.")
+            raise ValidationError(
+                "La hora de fin debe ser posterior a la de inicio."
+            )
+
+        if fecha_fin > fecha_inicio + timedelta(days=7):
+            raise ValidationError(
+                "La duración del taller no puede superar los 7 días."
+            )
         if categoria is None:
             raise ValidationError("La categoría del taller es obligatoria.")
         abreviatura = cls.abreviatura_actividad(nombre)
@@ -141,14 +159,18 @@ class Coordinador:
                 f"ya hay {confirmados} participantes confirmados."
             )
 
-        if fecha_inicio < ahora:
+        if fecha_inicio <= ahora:
             raise ValidationError(
-                "La fecha de inicio no puede ser anterior a la actual."
+                "La fecha de inicio debe ser futura."
             )
 
         if fecha_fin <= fecha_inicio:
             raise ValidationError(
                 "La hora de fin debe ser posterior a la de inicio."
+            )
+        if fecha_fin > fecha_inicio + timedelta(days=7):
+            raise ValidationError(
+                "La duración del taller no puede superar los 7 días."
             )
 
         # Guardar los datos anteriores para la auditoría.
