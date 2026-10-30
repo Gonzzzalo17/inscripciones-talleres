@@ -29,6 +29,9 @@ def lista_talleres(request):
     if request.user.rol == Usuario.Rol.PARTICIPANTE:
         talleres = talleres.filter(estado=Taller.Estado.APROBADO, cancelado=False,
                                    fecha_inicio__gt=timezone.now())
+        # El coordinador solo ve los talleres que él pidió
+    elif request.user.rol == Usuario.Rol.COORDINADOR:
+        talleres = talleres.filter(coordinador=request.user)
     return render(request, 'inscripciones/lista_talleres.html',
                   {'talleres': talleres, 'ahora': timezone.now()})
 
@@ -171,6 +174,9 @@ def historial_cancelaciones(request):
 def ocupacion_taller(request, pk):
     # HU-07: consultar la ocupación de un taller (solo lectura, no cambia datos)
     taller = get_object_or_404(Taller, pk=pk)
+    # El coordinador solo ve la ocupación de sus propios talleres
+    if request.user.rol == Usuario.Rol.COORDINADOR and taller.coordinador_id != request.user.pk:
+        return HttpResponseForbidden("No tienes permiso para ver esta página.")
     ocupacion = Operador.calcular_ocupacion(taller)
     return render(request, 'inscripciones/ocupacion_taller.html', {
         'taller': taller,
