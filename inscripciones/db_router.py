@@ -1,3 +1,4 @@
+from django.db import DatabaseError
 
 class EstudiantesRouter:
     """
@@ -12,7 +13,9 @@ class EstudiantesRouter:
 
     def db_for_write(self, model, **hints):
         if model._meta.model_name == 'estudianteestatico':
-            return 'estudiantes_db'
+            raise DatabaseError(
+                "No está permitido modificar el padrón de estudiantes."
+            )
         return None
 
     def allow_relation(self, obj1, obj2, **hints):

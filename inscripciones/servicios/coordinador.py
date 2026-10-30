@@ -126,13 +126,18 @@ class Coordinador:
                 "Solo puedes editar tus propios talleres."
             )
 
+        # No permitir editar talleres cancelados.
+        if taller.cancelado:
+            raise ValidationError(
+                "No se puede editar un taller que ha sido cancelado."
+            )
+
         ahora = timezone.now()
 
         if taller.fecha_inicio <= ahora:
             raise ValidationError(
                 "El taller ya empezó y no se puede editar."
             )
-
         # El motivo debe existir en la tabla MotivoEdicion.
         if not isinstance(motivo, MotivoEdicion):
             raise ValidationError(

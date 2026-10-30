@@ -180,6 +180,12 @@ def ocupacion_taller(request, pk):
 @solo_para(Usuario.Rol.COORDINADOR, Usuario.Rol.OPERADOR)
 def editar_taller(request, pk):
     taller = get_object_or_404(Taller, pk=pk)
+    if taller.cancelado:
+        messages.error(
+            request,
+            "No puedes editar un taller que ha sido cancelado."
+        )
+        return redirect('lista_talleres')
     if not puede_manejar_el_taller(request.user, taller):
         return HttpResponseForbidden(
             "No tienes permiso para editar este taller."

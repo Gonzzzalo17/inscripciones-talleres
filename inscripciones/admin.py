@@ -1,14 +1,37 @@
 from django.contrib import admin
 from .models import (
-    Usuario, Coordinador, Operador, Participante, Participante, Categoria, MotivoEdicion,
-    EstudianteEstatico, Taller, Inscripcion, HistorialCancelacion
+    Usuario,
+    Coordinador,
+    Operador,
+    Participante,
+    Categoria,
+    MotivoEdicion,
+    EstudianteEstatico,
+    Taller,
+    Inscripcion,
+    HistorialCancelacion,
 )
 
 
 @admin.register(EstudianteEstatico)
 class EstudianteEstaticoAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nombre', 'apellido','carrera')
-    search_fields = ('codigo', 'nombre', 'apellido','carrera')
+    list_display = ('codigo', 'nombre', 'apellido', 'carrera')
+    search_fields = ('codigo', 'nombre', 'apellido', 'carrera')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).using('estudiantes_db')
+
+    def has_view_permission(self, request, obj=None):
+        return True
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Taller)
