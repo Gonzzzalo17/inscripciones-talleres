@@ -4,7 +4,7 @@
 - **Integrantes:** Gonzalo Cárdenas, Santiago Arauz, Andrea Trujillo
 - **Requisitos de origen:** [sesion-06-requisitos.md](sesion-06-requisitos.md)
 - **Planilla de historias, casos de uso y cumplimiento:** [proyectoTalleres.xlsx](https://docs.google.com/spreadsheets/d/1oyhV76VcpE20u-caiYUrRQok9BZoxhekKmNNaoeJrDQ/edit?usp=sharing)
-- **Contenido:** las 12 historias de usuario del sistema; para cada una, sus casos de uso con su redacción completa, su diagrama de flujo y su diagrama de secuencia. El flujo elegido para el detalle de la sesión 7 es **HU-02 / CU-04 — Solicitar plaza** (sección 4), que además incluye la tabla de estados de la inscripción.
+- **Contenido:** el diagrama de casos de uso del sistema y las 12 historias de usuario agrupadas por rol (coordinador, operador, participante y funciones compartidas). Cada historia tiene sus casos de uso con su redacción completa, su diagrama de flujo y su diagrama de secuencia. El flujo elegido para el detalle de la sesión 7 es **HU-02 / CU-04 — Solicitar plaza** (sección 6.1), que además incluye la tabla de estados de la inscripción.
 
 ## 1. Requisitos, historias de usuario y casos de uso
 
@@ -34,24 +34,86 @@ Cada requisito de la sesión 6 se cumple con al menos una historia de usuario y 
 | TAL-RT-03 | Cupo permitido (4 a 40) | HU-01, HU-04 | CU-01, CU-06 |
 | TAL-RT-04 | Base de datos SQLite | Todas | Todos |
 
-### Historias de usuario y sus casos de uso
+### Historias de usuario por rol
 
-| Historia | Rol | Quiere | Casos de uso | Sección |
+| Rol | Historia | Quiere | Casos de uso | Sección |
 |---|---|---|---|---|
-| HU-01 | coordinador (también operador) | publicar talleres con nombre, categoría, cupo y horario, y poder cancelarlos | CU-01, CU-03, CU-07 | 3 |
-| HU-02 | participante (o el operador a su nombre) | solicitar una plaza en un taller | CU-04 | 4 |
-| HU-03 | operador | aceptar o rechazar los talleres y las ediciones que piden los coordinadores | CU-02 | 5 |
-| HU-04 | coordinador (también operador) | cambiar las fechas y el cupo de mis talleres eligiendo un motivo de la lista | CU-06, CU-14 | 6 |
-| HU-05 | participante (o el operador a su nombre) | cancelar mi inscripción o mi lugar en la lista de espera | CU-05 | 7 |
-| HU-06 | participante (también coordinador) | ver en pantalla los avisos de lo que cambió | CU-10 | 8 |
-| HU-07 | coordinador (también operador) | consultar la ocupación de mis talleres | CU-08 | 9 |
-| HU-08 | participante | consultar el estado de mis inscripciones | CU-09 | 10 |
-| HU-09 | operador | ver el historial de cancelaciones, saber quién está bloqueado y poder levantar el bloqueo | CU-11, CU-12 | 11 |
-| HU-10 | operador | buscar inscripciones por participante o por taller | CU-13 | 12 |
-| HU-11 | participante | buscar talleres por categoría | CU-03, CU-14 | 13 |
-| HU-12 | usuario (estudiante, coordinador u operador) | crear mi cuenta si soy estudiante, entrar con mi código y contraseña y ver solo las opciones de mi rol | CU-15 | 14 |
+| Coordinador | HU-01 | publicar talleres con nombre, categoría, cupo y horario, y poder cancelarlos | CU-01, CU-03, CU-07 | 4.1 |
+| Coordinador | HU-04 | cambiar las fechas y el cupo de mis talleres eligiendo un motivo de la lista | CU-06, CU-14 | 4.2 |
+| Coordinador | HU-07 | consultar la ocupación de mis talleres | CU-08 | 4.3 |
+| Operador | HU-03 | aceptar o rechazar los talleres y las ediciones que piden los coordinadores | CU-02 | 5.1 |
+| Operador | HU-09 | ver el historial de cancelaciones, saber quién está bloqueado y poder levantar el bloqueo | CU-11, CU-12 | 5.2 |
+| Operador | HU-10 | buscar inscripciones por participante o por taller | CU-13 | 5.3 |
+| Participante | HU-02 | solicitar una plaza en un taller | CU-04 | 6.1 |
+| Participante | HU-05 | cancelar mi inscripción o mi lugar en la lista de espera | CU-05 | 6.2 |
+| Participante | HU-08 | consultar el estado de mis inscripciones | CU-09 | 6.3 |
+| Participante | HU-11 | buscar talleres por categoría | CU-03, CU-14 | 6.4 |
+| Funciones compartidas | HU-06 | ver en pantalla los avisos de lo que cambió | CU-10 | 7.1 |
+| Funciones compartidas | HU-12 | crear mi cuenta si soy estudiante, entrar con mi código y contraseña y ver solo las opciones de mi rol | CU-15 | 7.2 |
 
-## 2. Cómo leer los diagramas
+## 2. Diagrama de casos de uso
+
+Muestra **qué puede hacer cada rol** en el sistema, sin entrar en el orden de los pasos. Las líneas indican que el actor participa en ese caso de uso, no un orden. El rectángulo es el límite del sistema: lo que está adentro lo resuelve el sistema.
+
+```mermaid
+flowchart LR
+    CO["👤<br/>Coordinador"]
+    OP["👤<br/>Operador"]
+    PA["👤<br/>Participante"]
+    subgraph S["Sistema de inscripciones a talleres"]
+        subgraph GCM["De los tres roles"]
+            CU15(["CU-15<br/>Crear cuenta e iniciar sesión"])
+            CU03(["CU-03<br/>Ver y buscar talleres"])
+            CU10(["CU-10<br/>Ver notificaciones"])
+        end
+        subgraph GPA["Del participante"]
+            CU04(["CU-04<br/>Solicitar plaza"])
+            CU05(["CU-05<br/>Cancelar una inscripción"])
+            CU09(["CU-09<br/>Ver mis inscripciones"])
+            CU11(["CU-11<br/>Bloquear por exceso de cancelaciones"])
+        end
+        subgraph GOP["Del operador"]
+            CU02(["CU-02<br/>Aprobar o rechazar un taller"])
+            CU12(["CU-12<br/>Historial de cancelaciones y levantar bloqueo"])
+            CU13(["CU-13<br/>Buscar inscripciones"])
+            CU14(["CU-14<br/>Agregar categorías y motivos"])
+        end
+        subgraph GCO["Del coordinador"]
+            CU01(["CU-01<br/>Registrar un taller"])
+            CU06(["CU-06<br/>Editar fechas y cupo"])
+            CU07(["CU-07<br/>Cancelar un taller completo"])
+            CU08(["CU-08<br/>Consultar la ocupación"])
+        end
+    end
+    CO --- CU01
+    CO --- CU06
+    CO --- CU07
+    CO --- CU08
+    OP --- CU02
+    OP --- CU12
+    OP --- CU13
+    OP --- CU14
+    PA --- CU04
+    PA --- CU05
+    PA --- CU09
+    CU05 -. "incluye" .-> CU11
+    CO --- GCM
+    OP --- GCM
+    PA --- GCM
+```
+
+| Rol | Qué hace en el sistema | Casos de uso propios |
+|---|---|---|
+| **Coordinador** | Crea, edita y cancela **sus** talleres y revisa su ocupación | CU-01, CU-06, CU-07, CU-08 |
+| **Operador** | Aprueba o rechaza talleres, mantiene categorías y motivos, busca inscripciones y maneja los bloqueos. También puede hacer todo lo del coordinador y actuar a nombre de un participante | CU-02, CU-12, CU-13, CU-14 |
+| **Participante** | Pide plaza, cancela y revisa sus inscripciones; si cancela demasiado, el sistema lo bloquea | CU-04, CU-05, CU-09 (y CU-11, que aplica el sistema) |
+| **Los tres** | Entran al sistema, buscan talleres y ven sus avisos | CU-03, CU-10, CU-15 |
+
+`incluye` significa que, cada vez que un participante cancela (CU-05), el sistema revisa si corresponde el bloqueo (CU-11).
+
+## 3. Cómo leer los diagramas
+
+**Diagramas de casos de uso.** Muestran qué hace cada rol (sección 2 y el inicio de cada parte).
 
 **Diagramas de flujo.** Muestran las decisiones que toma el sistema, de arriba hacia abajo. Los rombos son preguntas (Sí / No) y los rectángulos son lo que el sistema hace. Todos los caminos terminan en «Fin».
 
@@ -67,7 +129,38 @@ Cada requisito de la sesión 6 se cumple con al menos una historia de usuario y 
 
 Las flechas continuas son pedidos y las punteadas son respuestas. `alt` muestra caminos distintos según lo que pase (éxito o rechazo) y `opt` muestra pasos que solo ocurren a veces.
 
-## 3. HU-01 — Publicar y cancelar talleres
+## 4. Coordinador
+
+El coordinador organiza sus talleres: los crea, cambia sus fechas y su cupo cuando hay un imprevisto, los cancela si no se van a dictar y revisa cuántos inscritos tiene. Solo ve y maneja **sus** talleres, y lo que crea o edita queda pendiente hasta que el operador lo aprueba.
+
+```mermaid
+flowchart LR
+    CO["👤<br/>Coordinador"]
+    subgraph S["Sistema de inscripciones a talleres"]
+        subgraph GCM["De los tres roles"]
+            CU03(["CU-03<br/>Ver y buscar talleres"])
+            CU10(["CU-10<br/>Ver notificaciones"])
+            CU15(["CU-15<br/>Crear cuenta e iniciar sesión"])
+        end
+        subgraph GPR["Propios del coordinador"]
+            CU01(["CU-01<br/>Registrar un taller"])
+            CU06(["CU-06<br/>Editar fechas y cupo"])
+            CU07(["CU-07<br/>Cancelar un taller completo"])
+            CU08(["CU-08<br/>Consultar la ocupación"])
+        end
+    end
+    CO --- CU01
+    CO --- CU06
+    CO --- CU07
+    CO --- CU08
+    CO --- GCM
+```
+
+El operador también puede hacer todo lo del coordinador, sobre cualquier taller.
+
+Historias de esta parte: HU-01 (publicar y cancelar talleres), HU-04 (editar fechas y cupo de un taller), HU-07 (consultar la ocupación).
+
+### 4.1 HU-01 — Publicar y cancelar talleres
 
 **Historia de usuario:** Como coordinador (también operador), quiero publicar talleres con nombre, categoría, cupo y horario, y poder cancelarlos para que los participantes vean la oferta y se inscriban.
 
@@ -76,7 +169,7 @@ Las flechas continuas son pedidos y las punteadas son respuestas. `alt` muestra 
 - **Casos de uso:** CU-01, CU-03, CU-07
 - **Pruebas:** `test_coordinador.py`, `test_operador.py`, `test_decidir_taller.py`
 
-### 3.1 CU-01 — Registrar un taller
+#### 4.1.1 CU-01 — Registrar un taller
 
 | Campo | Descripción |
 |---|---|
@@ -151,7 +244,7 @@ sequenceDiagram
     end
 ```
 
-### 3.2 CU-03 — Ver y buscar talleres
+#### 4.1.2 CU-03 — Ver y buscar talleres
 
 | Campo | Descripción |
 |---|---|
@@ -222,7 +315,7 @@ sequenceDiagram
     Note over Vis,BD: Solo lee: no cambia ningún dato
 ```
 
-### 3.3 CU-07 — Cancelar un taller completo
+#### 4.1.3 CU-07 — Cancelar un taller completo
 
 | Campo | Descripción |
 |---|---|
@@ -289,7 +382,616 @@ sequenceDiagram
     Pan-->>C: Ve el taller como Cancelado
 ```
 
-## 4. HU-02 — Solicitar una plaza
+### 4.2 HU-04 — Editar fechas y cupo de un taller
+
+**Historia de usuario:** Como coordinador (también operador), quiero cambiar las fechas y el cupo de mis talleres eligiendo un motivo de la lista para ajustar el taller a imprevistos sin perder el historial de cambios.
+
+- **Criterio de aceptación:** Solo se editan fechas y cupo de un taller que no empezó ni está cancelado; nombre y categoría no cambian. El motivo se elige de la lista parametrizada (4 motivos más comunes, ampliable por el operador). Se guardan los datos anteriores con el motivo y la fecha. Si el cupo sube, la espera pasa a Confirmado en orden; el cupo no baja de los confirmados. Si edita el coordinador, el taller vuelve a Pendiente hasta que el operador lo apruebe.
+- **Requisitos que cumple:** TAL-RF-07, TAL-RF-10, TAL-RF-12, TAL-RT-03
+- **Casos de uso:** CU-06, CU-14
+- **Pruebas:** `test_coordinador.py`, `test_edicion_taller.py`, `test_editar_taller_pantalla.py`, `test_catalogos_operador.py`
+
+#### 4.2.1 CU-06 — Editar fechas y cupo de un taller
+
+| Campo | Descripción |
+|---|---|
+| Actor | Coordinador (sus talleres) u Operador |
+| Objetivo | Corregir fechas o cupo conservando el motivo y el historial |
+| Disparador | Elige «Editar» en un taller |
+| Precondiciones | Inició sesión; el taller existe |
+| Poscondición de éxito | Fechas y cupo actualizados; historial con datos anteriores, motivo y fecha; Pendiente si editó el coordinador |
+
+**Flujo principal**
+
+1. El sistema muestra cupo, inicio, fin y la lista de motivos.
+2. El usuario cambia datos y elige un motivo.
+3. El sistema valida permisos, que el taller no esté cancelado ni haya empezado, el motivo, el cupo (4–40 y no menor que los confirmados) y las fechas.
+4. Guarda el historial y actualiza el taller (Pendiente si editó el coordinador).
+5. Si el cupo subió, confirma a la espera en orden hasta llenarlo y avisa a cada promovido.
+
+**Rechazos y excepciones**
+
+- E1. Datos inválidos o sin motivo: no guarda.
+- E2. Taller cancelado o ya empezado: no se puede editar («No puedes editar un taller que ha sido cancelado.» / «El taller ya empezó y no se puede editar.»).
+- E3. Coordinador con taller ajeno: 403.
+- E4. Cupo menor que los confirmados: «No se puede bajar el cupo a N: ya hay M participantes confirmados.»
+- E5. El operador rechaza la edición: ver CU-02.
+
+**Diagrama de flujo**
+
+```mermaid
+flowchart TD
+    A(["Coordinador u operador presiona Editar"]) --> B{"¿Es su taller o es operador?"}
+    B -- No --> R1["403: no tiene permiso"]
+    B -- Sí --> C{"¿El taller está cancelado o ya empezó?"}
+    C -- Sí --> R2["Rechaza: no se puede editar"]
+    C -- No --> D["Cambia fechas o cupo y elige un motivo de la lista"]
+    D --> E{"¿Datos válidos, motivo elegido y cupo no menor que los confirmados?"}
+    E -- No --> R3["Muestra el error y no guarda"]
+    E -- Sí --> F["Guarda en el historial los datos anteriores y el motivo"]
+    F --> G["Guarda las nuevas fechas y el cupo"]
+    G --> H{"¿Lo editó un coordinador?"}
+    H -- Sí --> I["Taller vuelve a Pendiente hasta que el operador decida"]
+    H -- No --> J["Sigue Aprobado"]
+    I --> K{"¿El cupo subió y hay gente en espera?"}
+    J --> K
+    K -- Sí --> L["Los primeros de la espera pasan a CONFIRMADO con aviso"]
+    K -- No --> Z(["Fin"])
+    L --> Z
+    R1 --> Z
+    R2 --> Z
+    R3 --> Z
+```
+
+**Diagrama de secuencia**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Coordinador
+    participant Pan as Frontend<br/>Pantalla Editar taller<br/>editar_taller.html
+    participant Vis as Backend: vista<br/>editar_taller<br/>views.py
+    participant Ser as Backend: servicio<br/>coordinador.py
+    participant BD as Base de datos<br/>SQLite
+
+    C->>Pan: Cambia fechas o cupo y elige un motivo de la lista
+    Pan->>Vis: Envía los cambios
+    Vis->>Ser: editar_taller(taller, datos, motivo, usuario)
+    Ser->>BD: Lee el taller y cuenta los confirmados
+    alt Taller ajeno, cancelado, ya empezado, sin motivo o cupo menor que los confirmados
+        Ser-->>Vis: Error con el motivo
+        Vis-->>Pan: Muestra el error
+        Pan-->>C: No se guarda nada
+    else Todo está bien
+        Ser->>BD: Guarda en el historial los datos anteriores y el motivo
+        Ser->>BD: Guarda las nuevas fechas y el cupo
+        opt Lo editó un coordinador
+            Ser->>BD: Estado = Pendiente (el operador decide en CU-02)
+        end
+        opt El cupo subió y hay gente en espera
+            Ser->>BD: Los primeros de la espera pasan a CONFIRMADO y reciben aviso
+        end
+        Ser-->>Vis: Taller actualizado
+        Vis-->>Pan: Vuelve a la lista de talleres
+        Pan-->>C: Ve el taller con sus nuevos datos
+    end
+```
+
+#### 4.2.2 CU-14 — Agregar categorías y motivos de edición
+
+| Campo | Descripción |
+|---|---|
+| Actor | Operador |
+| Objetivo | Ampliar las listas parametrizadas |
+| Disparador | Entra a «Categorías y motivos» |
+| Precondiciones | Inició sesión como operador |
+| Poscondición de éxito | La nueva categoría o motivo aparece al crear o editar talleres |
+
+**Flujo principal**
+
+1. El sistema muestra las categorías y motivos actuales.
+2. El operador escribe uno nuevo.
+3. El sistema quita espacios, verifica que no esté vacío ni repetido (sin importar mayúsculas) y lo guarda.
+
+**Rechazos y excepciones**
+
+- E1. Vacío: lo rechaza.
+- E2. Repetido: «Ya existe una categoría con ese nombre.» / «Ya existe un motivo con esa descripción.»
+- E3. Otro rol: 403.
+
+**Diagrama de flujo**
+
+```mermaid
+flowchart TD
+    A(["Operador abre Categorías y motivos"]) --> B["Escribe una categoría o un motivo y presiona Agregar"]
+    B --> C{"¿Está vacío?"}
+    C -- Sí --> R1["Rechaza: no puede estar vacío"]
+    C -- No --> D{"¿Ya existe, sin importar mayúsculas?"}
+    D -- Sí --> R2["Rechaza: ya existe"]
+    D -- No --> E["Lo guarda"]
+    E --> F["Aparece al crear o editar talleres"]
+    F --> Z(["Fin"])
+    R1 --> Z
+    R2 --> Z
+```
+
+**Diagrama de secuencia**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor OP as Operador
+    participant Pan as Frontend<br/>Pantalla Categorías y motivos<br/>gestionar_categorias_motivos.html
+    participant Vis as Backend: vista<br/>gestionar_categorias_motivos<br/>views.py
+    participant Ser as Backend: servicio<br/>operador.py
+    participant BD as Base de datos<br/>SQLite
+
+    OP->>Pan: Abre "Categorías y motivos"
+    Pan-->>OP: Ve las categorías y los motivos actuales
+    OP->>Pan: Escribe una categoría o un motivo y presiona Agregar
+    Pan->>Vis: Envía el texto
+    Vis->>Ser: agregar_categoria o agregar_motivo_edicion
+    Ser->>BD: ¿Ya existe (sin importar mayúsculas)?
+    alt Está vacío o ya existe
+        Ser-->>Vis: Error con el motivo
+    else Es nuevo
+        Ser->>BD: Lo guarda
+        Ser-->>Vis: Agregado
+    end
+    Vis-->>Pan: Vuelve con el mensaje
+    Pan-->>OP: Ya aparece en la lista para crear o editar talleres
+```
+
+### 4.3 HU-07 — Consultar la ocupación
+
+**Historia de usuario:** Como coordinador (también operador), quiero consultar la ocupación de mis talleres para saber cuántas plazas están ocupadas, cuántas libres y cuántas personas esperan.
+
+- **Criterio de aceptación:** Muestra cupo, ocupadas, libres (nunca negativas) y «en espera de máximo»; los cancelados no cuentan. El coordinador solo ve sus talleres (uno ajeno responde 403); el operador ve todos. No modifica datos.
+- **Requisitos que cumple:** TAL-RF-14
+- **Casos de uso:** CU-08
+- **Pruebas:** `test_operador.py`, `test_coordinador_solo_lo_suyo.py`
+
+#### 4.3.1 CU-08 — Consultar la ocupación de un taller
+
+| Campo | Descripción |
+|---|---|
+| Actor | Coordinador (sus talleres) u Operador |
+| Objetivo | Saber cuántas plazas están ocupadas y libres y cuántas personas esperan |
+| Disparador | Presiona «Ver ocupación» |
+| Precondiciones | Inició sesión; el taller existe |
+| Poscondición de éxito | Ve cupo, ocupadas, libres y espera/máximo; no se modifican datos |
+
+**Flujo principal**
+
+1. El sistema cuenta Confirmados y En espera (los cancelados no cuentan).
+2. Calcula libres = cupo − confirmados (mínimo 0) y el máximo de espera.
+3. Muestra los datos y «(lleno)» si no quedan plazas.
+
+**Rechazos y excepciones**
+
+- E1. Taller inexistente: 404.
+- E2. Coordinador con taller ajeno: 403.
+
+**Diagrama de flujo**
+
+```mermaid
+flowchart TD
+    A(["Coordinador u operador presiona Ver ocupación"]) --> B{"¿El taller existe?"}
+    B -- No --> R1["404: no encontrado"]
+    B -- Sí --> C{"¿Es un coordinador con un taller ajeno?"}
+    C -- Sí --> R2["403: no tiene permiso"]
+    C -- No --> D["Cuenta confirmados y personas en espera"]
+    D --> E["Calcula libres = cupo menos confirmados y el máximo de espera"]
+    E --> F["Muestra cupo, ocupadas, libres y espera N de M"]
+    F --> Z(["Fin"])
+    R1 --> Z
+    R2 --> Z
+```
+
+**Diagrama de secuencia**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Coordinador u Operador
+    participant Pan as Frontend<br/>Pantalla Ocupación<br/>ocupacion_taller.html
+    participant Vis as Backend: vista<br/>ocupacion_taller<br/>views.py
+    participant Ser as Backend: servicio<br/>operador.py
+    participant BD as Base de datos<br/>SQLite
+
+    C->>Pan: Presiona "Ver ocupación"
+    Pan->>Vis: Pide la ocupación del taller
+    alt Un coordinador pide un taller que no es suyo
+        Vis-->>Pan: 403 Prohibido
+    else Puede verlo
+        Vis->>Ser: calcular_ocupacion(taller)
+        Ser->>BD: Cuenta confirmados y personas en espera
+        BD-->>Ser: Cantidades
+        Ser->>Ser: Libres = cupo - confirmados, máximo de espera = 20 % del cupo
+        Ser-->>Vis: Ocupadas, libres, en espera y máximo
+        Vis-->>Pan: Muestra la tabla
+        Pan-->>C: Cupo, ocupadas, libres y "espera N de M"
+    end
+    Note over Vis,BD: Solo lee: no cambia ningún dato
+```
+
+## 5. Operador
+
+El operador es el administrador del sistema: decide qué talleres se publican, mantiene las listas de categorías y motivos, busca inscripciones, revisa el historial de cancelaciones y puede levantar un bloqueo.
+
+```mermaid
+flowchart LR
+    OP["👤<br/>Operador"]
+    subgraph S["Sistema de inscripciones a talleres"]
+        subgraph GCM["De los tres roles"]
+            CU03(["CU-03<br/>Ver y buscar talleres"])
+            CU10(["CU-10<br/>Ver notificaciones"])
+            CU15(["CU-15<br/>Crear cuenta e iniciar sesión"])
+        end
+        subgraph GPR["Propios del operador"]
+            CU02(["CU-02<br/>Aprobar o rechazar un taller"])
+            CU12(["CU-12<br/>Historial de cancelaciones y levantar bloqueo"])
+            CU13(["CU-13<br/>Buscar inscripciones"])
+            CU14(["CU-14<br/>Agregar categorías y motivos"])
+        end
+    end
+    OP --- CU02
+    OP --- CU12
+    OP --- CU13
+    OP --- CU14
+    OP --- GCM
+```
+
+Además puede hacer todo lo del coordinador sobre cualquier taller e inscribir o cancelar a nombre de un participante (CU-04 y CU-05).
+
+Historias de esta parte: HU-03 (aprobar o rechazar talleres), HU-09 (historial de cancelaciones y bloqueo), HU-10 (buscar inscripciones).
+
+### 5.1 HU-03 — Aprobar o rechazar talleres
+
+**Historia de usuario:** Como operador, quiero aceptar o rechazar los talleres y las ediciones que piden los coordinadores para que solo se publique lo que la organización aprobó.
+
+- **Criterio de aceptación:** Solo se decide sobre talleres Pendientes y no cancelados. Aprobado: recibe inscripciones. Rechazado: no se publica y el coordinador puede corregirlo. Si se rechaza la edición de un taller que ya tiene inscritos, vuelve a sus fechas y cupo anteriores, sigue Aprobado y nadie pierde su plaza. El coordinador y los inscritos reciben el aviso.
+- **Requisitos que cumple:** TAL-RF-09, TAL-RF-10
+- **Casos de uso:** CU-02
+- **Pruebas:** `test_operador.py`, `test_decidir_taller.py`, `test_notificaciones.py`
+
+#### 5.1.1 CU-02 — Aprobar o rechazar un taller
+
+| Campo | Descripción |
+|---|---|
+| Actor | Operador |
+| Objetivo | Decidir si se publica un taller o una edición pedida por un coordinador |
+| Disparador | Presiona «Aprobar» o «Rechazar» en «Pendientes» |
+| Precondiciones | Inició sesión como operador |
+| Poscondición de éxito | Aprobado: recibe inscripciones. Rechazado: no se publica. Edición rechazada con inscritos: vuelve a sus datos anteriores y sigue Aprobado. Avisos enviados |
+
+**Flujo principal**
+
+1. El operador abre «Pendientes».
+2. Elige aprobar o rechazar un taller.
+3. El sistema verifica que no esté cancelado y siga Pendiente.
+4a. Aprobar: queda Aprobado y avisa al coordinador.
+4b. Rechazar sin inscritos: queda Rechazado y avisa al coordinador.
+4c. Rechazar con inscritos (era una edición): vuelve a las fechas y cupo anteriores (el cupo no baja de los confirmados), confirma a la espera si hay lugar, sigue Aprobado y avisa al coordinador y a los inscritos.
+
+**Rechazos y excepciones**
+
+- E1. No está Pendiente: «Solo se puede aceptar o rechazar un taller que está pendiente.»
+- E2. Está cancelado: «El taller fue cancelado: ya no se puede aceptar ni rechazar.»
+
+**Diagrama de flujo**
+
+```mermaid
+flowchart TD
+    A(["Operador abre Pendientes"]) --> B["Elige Aprobar o Rechazar en un taller"]
+    B --> C{"¿El taller está cancelado o ya no está pendiente?"}
+    C -- Sí --> R1["Muestra el error y no cambia nada"]
+    C -- No --> D{"¿Qué decidió?"}
+    D -- Aprobar --> E["Taller Aprobado y aviso al coordinador"]
+    D -- Rechazar --> F{"¿El taller ya tiene inscritos?"}
+    F -- No --> G["Taller Rechazado y aviso al coordinador"]
+    F -- Sí --> H["Era una edición: vuelve a sus fechas y cupo anteriores"]
+    H --> I["Sigue Aprobado y nadie pierde su plaza"]
+    I --> J["Aviso a cada inscrito y al coordinador"]
+    E --> Z(["Fin"])
+    G --> Z
+    J --> Z
+    R1 --> Z
+```
+
+**Diagrama de secuencia**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor OP as Operador
+    participant Pan as Frontend<br/>Pantalla Pendientes<br/>talleres_pendientes.html
+    participant Vis as Backend: vista<br/>decidir_taller<br/>views.py
+    participant Ser as Backend: servicio<br/>operador.py
+    participant BD as Base de datos<br/>SQLite
+
+    OP->>Pan: Abre "Pendientes"
+    Pan-->>OP: Ve los talleres que esperan aprobación
+    OP->>Pan: Presiona Aprobar o Rechazar
+    Pan->>Vis: Envía la decisión
+    Vis->>Ser: decidir_solicitud_de_taller(operador, taller, decisión)
+    Ser->>BD: Lee el taller
+    alt El taller está cancelado o ya no está pendiente
+        Ser-->>Vis: Error con el motivo
+    else Aprobar
+        Ser->>BD: Estado = Aprobado
+        Ser->>BD: Aviso al coordinador: "Tu taller fue aprobado"
+    else Rechazar un taller nuevo (sin inscritos)
+        Ser->>BD: Estado = Rechazado
+        Ser->>BD: Aviso al coordinador: "Tu taller fue rechazado"
+    else Rechazar una edición (el taller ya tiene inscritos)
+        Ser->>BD: Vuelve a las fechas y cupo anteriores (del historial)
+        Ser->>BD: Sigue Aprobado y nadie pierde su plaza
+        Ser->>BD: Aviso a cada inscrito y al coordinador
+    end
+    Vis-->>Pan: Vuelve con el mensaje
+    Pan-->>OP: Ve el resultado
+```
+
+### 5.2 HU-09 — Historial de cancelaciones y bloqueo
+
+**Historia de usuario:** Como operador, quiero ver el historial de cancelaciones, saber quién está bloqueado y poder levantar el bloqueo para que quien cancela demasiado no quite oportunidades a los demás.
+
+- **Criterio de aceptación:** Más de 3 cancelaciones en 72 horas bloquean 24 horas: no puede inscribirse y pierde sus inscripciones y lugares de espera en talleres que no empezaron (sus plazas pasan al siguiente en espera). Si vuelve a pasar, otra vez 24 horas. El operador ve el historial y hasta cuándo dura el bloqueo, y puede levantarlo cuando quiera: el historial se conserva completo y queda registrado quién lo levantó y cuándo. Cancelar un taller completo no cuenta.
+- **Requisitos que cumple:** TAL-RF-08
+- **Casos de uso:** CU-11, CU-12
+- **Pruebas:** `test_baneo.py`, `test_operador.py`, `test_notificaciones.py`
+
+#### 5.2.1 CU-11 — Bloquear por exceso de cancelaciones
+
+| Campo | Descripción |
+|---|---|
+| Actor | Sistema |
+| Objetivo | Frenar a quien cancela demasiado |
+| Disparador | Un participante cancela (CU-05) |
+| Precondiciones | Existe su historial de cancelaciones |
+| Poscondición de éxito | Con más de 3 cancelaciones en 72 horas queda bloqueado 24 horas, pierde inscripciones y espera en talleres que no empezaron y recibe el aviso |
+
+**Flujo principal**
+
+1. Tras cada cancelación, el sistema cuenta las cancelaciones de las 72 horas anteriores.
+2. Si son más de 3, calcula el fin del bloqueo (24 horas).
+3. Avisa el bloqueo.
+4. Lo saca de las listas de espera (se renumeran) y cancela sus confirmados; cada plaza pasa al siguiente en espera.
+5. Mientras dure, CU-04 rechaza sus solicitudes. Si reincide, otra vez 24 horas.
+
+**Rechazos y excepciones**
+
+- E1. 3 o menos en 72 horas: no se bloquea.
+- E2. Talleres ya empezados: no se tocan.
+- E3. El operador levantó el bloqueo (CU-12): las cancelaciones anteriores ya no cuentan.
+
+**Diagrama de flujo**
+
+```mermaid
+flowchart TD
+    A(["Un participante cancela una inscripción (CU-05)"]) --> B["Cuenta sus cancelaciones desde el último bloqueo levantado"]
+    B --> C{"¿Más de 3 en 72 horas?"}
+    C -- No --> Z(["Fin: no pasa nada"])
+    C -- Sí --> D["Queda bloqueado 24 horas desde esa cancelación"]
+    D --> E["Aviso: Quedaste bloqueado hasta ..."]
+    E --> F["Sale de todas sus listas de espera de talleres que no empezaron"]
+    F --> G["Pierde sus inscripciones confirmadas de talleres que no empezaron"]
+    G --> H["Cada plaza que dejó pasa al primero en espera"]
+    H --> I["Mientras dure, CU-04 rechaza sus solicitudes"]
+    I --> Y(["Fin"])
+```
+
+**Diagrama de secuencia**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Ser as Backend: servicio<br/>operador.py
+    participant BD as Base de datos<br/>SQLite
+    actor P as Participante
+
+    Note over Ser: Se ejecuta después de cada cancelación (CU-05)
+    Ser->>BD: Trae sus cancelaciones y la fecha del último bloqueo levantado
+    BD-->>Ser: Fechas
+    Ser->>Ser: Desde el último levantamiento, ¿más de 3 cancelaciones en 72 horas?
+    alt 3 o menos
+        Ser->>Ser: No pasa nada
+    else Más de 3
+        Ser->>BD: Bloqueado 24 horas desde esa cancelación
+        Ser->>BD: Aviso: "Quedaste bloqueado hasta el ..."
+        Ser->>BD: Sale de todas sus listas de espera (talleres que no empezaron)
+        Ser->>BD: Pierde sus inscripciones confirmadas (talleres que no empezaron)
+        Ser->>BD: Cada plaza que dejó pasa al primero en espera
+    end
+    P->>Ser: Mientras está bloqueado intenta inscribirse (CU-04)
+    Ser-->>P: "Bloqueado hasta el ..."
+    Note over Ser,BD: Si vuelve a pasar, otra vez 24 horas. El operador puede levantarlo (CU-12)
+```
+
+#### 5.2.2 CU-12 — Consultar el historial de cancelaciones y levantar un bloqueo
+
+| Campo | Descripción |
+|---|---|
+| Actor | Operador |
+| Objetivo | Ver cuándo canceló un participante, si está bloqueado y quitar el bloqueo |
+| Disparador | Entra a «Historial de cancelaciones» y elige a un participante |
+| Precondiciones | Inició sesión como operador |
+| Poscondición de éxito | Ve las cancelaciones y el bloqueo. Si lo levanta, el participante puede volver a inscribirse y queda registrado qué operador lo levantó y cuándo |
+
+**Flujo principal**
+
+1. El operador elige al participante.
+2. El sistema muestra sus cancelaciones (de la más reciente a la más antigua) y hasta cuándo está bloqueado.
+3. Si está bloqueado, el operador puede presionar «Levantar bloqueo».
+4. El sistema registra qué operador levantó el bloqueo y cuándo; el historial de cancelaciones se conserva completo y las cancelaciones anteriores ya no cuentan para un bloqueo.
+
+**Rechazos y excepciones**
+
+- E1. Sin cancelaciones: lista vacía.
+- E2. Participante inexistente: 404.
+- E3. Quien levanta no es operador: «Solo el operador puede hacer esta acción.»
+- E4. No tiene un bloqueo activo: «El participante no tiene un bloqueo activo.»
+
+**Diagrama de flujo**
+
+```mermaid
+flowchart TD
+    A(["Operador abre Historial de cancelaciones"]) --> B["Elige un participante"]
+    B --> C["Ve sus cancelaciones con taller y fecha"]
+    C --> D{"¿Está bloqueado?"}
+    D -- No --> Z(["Fin"])
+    D -- Sí --> E["Ve hasta cuándo dura el bloqueo y el botón Levantar bloqueo"]
+    E --> F{"¿Lo quiere levantar?"}
+    F -- No --> Z
+    F -- Sí --> G{"¿El bloqueo sigue activo?"}
+    G -- No --> R1["Rechaza: el participante no tiene un bloqueo activo"]
+    G -- Sí --> H["Registra qué operador lo levantó y cuándo"]
+    H --> I["Las cancelaciones se conservan pero las anteriores ya no cuentan"]
+    I --> J["El participante puede volver a inscribirse"]
+    J --> Z
+    R1 --> Z
+```
+
+**Diagrama de secuencia**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor OP as Operador
+    participant Pan as Frontend<br/>Pantalla Historial de cancelaciones<br/>historial_cancelaciones.html
+    participant Vis as Backend: vista<br/>historial / levantar_bloqueo<br/>views.py
+    participant Ser as Backend: servicio<br/>operador.py
+    participant BD as Base de datos<br/>SQLite
+
+    OP->>Pan: Elige un participante y presiona "Ver historial"
+    Pan->>Vis: Pide su historial
+    Vis->>Ser: consultar_historial_cancelaciones y calcular_fin_del_bloqueo
+    Ser->>BD: Busca sus cancelaciones y bloqueos
+    BD-->>Vis: Cancelaciones y fecha de fin del bloqueo
+    Vis-->>Pan: Muestra la lista
+    Pan-->>OP: Cada cancelación con taller y fecha, y si está bloqueado
+    opt Está bloqueado y el operador lo quiere levantar
+        OP->>Pan: Presiona "Levantar bloqueo" y confirma
+        Pan->>Vis: Envía el pedido
+        Vis->>Ser: levantar_bloqueo(operador, participante)
+        alt No tiene un bloqueo activo
+            Ser-->>Vis: "El participante no tiene un bloqueo activo."
+        else Tiene un bloqueo activo
+            Ser->>BD: Registra quién levantó el bloqueo y cuándo
+            Note over Ser,BD: No se borra ninguna cancelación.<br/>Las anteriores a este momento ya no cuentan para un nuevo bloqueo
+            Ser-->>Vis: Bloqueo levantado
+        end
+        Vis-->>Pan: Vuelve al historial con el mensaje
+        Pan-->>OP: El participante ya puede inscribirse
+    end
+```
+
+### 5.3 HU-10 — Buscar inscripciones
+
+**Historia de usuario:** Como operador, quiero buscar inscripciones por participante o por taller para responder consultas: qué talleres hay, si hay espacio, quiénes están inscritos y en qué orden espera cada uno.
+
+- **Criterio de aceptación:** Se busca por código, usuario, nombre o apellido del participante, o por código o nombre del taller. Muestra taller, participante, estado y posición; con el código de un taller se ven sus confirmados, su espera en orden y sus cancelados. Sin texto no devuelve nada. No modifica datos.
+- **Requisitos que cumple:** TAL-RF-14
+- **Casos de uso:** CU-13
+- **Pruebas:** `test_operador.py`, `test_buscar.py`
+
+#### 5.3.1 CU-13 — Buscar inscripciones
+
+| Campo | Descripción |
+|---|---|
+| Actor | Operador |
+| Objetivo | Responder consultas sobre talleres, espacios, inscritos y orden de la espera |
+| Disparador | Escribe en «Buscar inscripciones» |
+| Precondiciones | Inició sesión como operador |
+| Poscondición de éxito | Ve las inscripciones que coinciden; no se modifican datos |
+
+**Flujo principal**
+
+1. El operador escribe un código, nombre o apellido de participante, o un código o nombre de taller.
+2. El sistema busca sin importar mayúsculas.
+3. Muestra taller, participante, estado y posición. Con el código de un taller se ven sus confirmados, su espera en orden y sus cancelados.
+
+**Rechazos y excepciones**
+
+- E1. Sin texto: no muestra resultados.
+- E2. Sin coincidencias: lista vacía.
+
+**Diagrama de flujo**
+
+```mermaid
+flowchart TD
+    A(["Operador abre Buscar inscripciones"]) --> B["Escribe un código, nombre o apellido, o un código o nombre de taller"]
+    B --> C{"¿Escribió algo?"}
+    C -- No --> D["Sin resultados"]
+    C -- Sí --> E["Busca coincidencias sin importar mayúsculas"]
+    E --> F{"¿Hay coincidencias?"}
+    F -- No --> G["Lista vacía"]
+    F -- Sí --> H["Muestra taller, participante, estado y posición"]
+    D --> Z(["Fin"])
+    G --> Z
+    H --> Z
+```
+
+**Diagrama de secuencia**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor OP as Operador
+    participant Pan as Frontend<br/>Pantalla Buscar inscripciones<br/>buscar_inscripciones.html
+    participant Vis as Backend: vista<br/>buscar_inscripciones<br/>views.py
+    participant Ser as Backend: servicio<br/>operador.py
+    participant BD as Base de datos<br/>SQLite
+
+    OP->>Pan: Escribe un código o nombre de participante, o un código o nombre de taller
+    Pan->>Vis: Envía la búsqueda
+    alt No escribió nada
+        Vis-->>Pan: Sin resultados
+    else Escribió algo
+        Vis->>Ser: buscar_inscripciones(texto)
+        Ser->>BD: Busca inscripciones que coincidan (sin importar mayúsculas)
+        BD-->>Ser: Coincidencias
+        Ser-->>Vis: Resultados ordenados por fecha del taller
+        Vis-->>Pan: Muestra la tabla
+        Pan-->>OP: Taller, participante, estado y posición en la espera
+    end
+    Note over OP,Pan: Con el código de un taller (TAL-DAN-01) se ven sus confirmados,<br/>su espera en orden y sus cancelados
+    Note over Vis,BD: Solo lee: no cambia ningún dato
+```
+
+## 6. Participante
+
+El participante es el estudiante que se inscribe: busca talleres, pide su plaza, queda confirmado o en la lista de espera, cancela si no puede asistir y revisa el estado de sus inscripciones. Si cancela más de 3 veces en 72 horas, el sistema lo bloquea 24 horas.
+
+```mermaid
+flowchart LR
+    PA["👤<br/>Participante"]
+    subgraph S["Sistema de inscripciones a talleres"]
+        subgraph GCM["De los tres roles"]
+            CU03(["CU-03<br/>Ver y buscar talleres"])
+            CU10(["CU-10<br/>Ver notificaciones"])
+            CU15(["CU-15<br/>Crear cuenta e iniciar sesión"])
+        end
+        subgraph GPR["Propios del participante"]
+            CU04(["CU-04<br/>Solicitar plaza"])
+            CU05(["CU-05<br/>Cancelar una inscripción"])
+            CU09(["CU-09<br/>Ver mis inscripciones"])
+            CU11(["CU-11<br/>Bloquear por exceso de cancelaciones"])
+        end
+    end
+    PA --- CU04
+    PA --- CU05
+    PA --- CU09
+    CU05 -. "incluye" .-> CU11
+    PA --- GCM
+```
+
+El bloqueo (CU-11) no lo pide nadie: el sistema lo aplica solo cuando el participante cancela (CU-05).
+
+Historias de esta parte: HU-02 (solicitar una plaza), HU-05 (cancelar una inscripción), HU-08 (ver mis inscripciones), HU-11 (buscar talleres por categoría).
+
+### 6.1 HU-02 — Solicitar una plaza
 
 **Historia de usuario:** Como participante (o el operador a su nombre), quiero solicitar una plaza en un taller para asegurar mi cupo o quedar en la lista de espera.
 
@@ -298,9 +1000,9 @@ sequenceDiagram
 - **Casos de uso:** CU-04
 - **Pruebas:** `test_operador.py`, `test_reinscripcion.py`, `test_simultaneas.py`, `test_sesion.py`, `e2e/test_recorridos.py`
 
-Este es el flujo elegido para el detalle de la sesión 7. Además de la ficha, el diagrama de flujo y el de secuencia, incluye la tabla de estados de la inscripción (4.2).
+Este es el flujo elegido para el detalle de la sesión 7. Además de la ficha, el diagrama de flujo y el de secuencia, incluye la tabla de estados de la inscripción (6.1.2).
 
-### 4.1 CU-04 — Solicitar plaza
+#### 6.1.1 CU-04 — Solicitar plaza
 
 | Campo | Descripción |
 |---|---|
@@ -402,7 +1104,7 @@ sequenceDiagram
     end
 ```
 
-### 4.2 Estados de la inscripción
+#### 6.1.2 Estados de la inscripción
 
 Muestra cómo cambia el estado de **una inscripción de una persona en un taller** (no del taller completo).
 
@@ -419,254 +1121,7 @@ Muestra cómo cambia el estado de **una inscripción de una persona en un taller
 
 «Sin inscripción» es la ausencia de un registro activo, no un valor guardado. Un rechazo no crea un estado «rechazada»: lo que se rechaza es la **solicitud**.
 
-## 5. HU-03 — Aprobar o rechazar talleres
-
-**Historia de usuario:** Como operador, quiero aceptar o rechazar los talleres y las ediciones que piden los coordinadores para que solo se publique lo que la organización aprobó.
-
-- **Criterio de aceptación:** Solo se decide sobre talleres Pendientes y no cancelados. Aprobado: recibe inscripciones. Rechazado: no se publica y el coordinador puede corregirlo. Si se rechaza la edición de un taller que ya tiene inscritos, vuelve a sus fechas y cupo anteriores, sigue Aprobado y nadie pierde su plaza. El coordinador y los inscritos reciben el aviso.
-- **Requisitos que cumple:** TAL-RF-09, TAL-RF-10
-- **Casos de uso:** CU-02
-- **Pruebas:** `test_operador.py`, `test_decidir_taller.py`, `test_notificaciones.py`
-
-### 5.1 CU-02 — Aprobar o rechazar un taller
-
-| Campo | Descripción |
-|---|---|
-| Actor | Operador |
-| Objetivo | Decidir si se publica un taller o una edición pedida por un coordinador |
-| Disparador | Presiona «Aprobar» o «Rechazar» en «Pendientes» |
-| Precondiciones | Inició sesión como operador |
-| Poscondición de éxito | Aprobado: recibe inscripciones. Rechazado: no se publica. Edición rechazada con inscritos: vuelve a sus datos anteriores y sigue Aprobado. Avisos enviados |
-
-**Flujo principal**
-
-1. El operador abre «Pendientes».
-2. Elige aprobar o rechazar un taller.
-3. El sistema verifica que no esté cancelado y siga Pendiente.
-4a. Aprobar: queda Aprobado y avisa al coordinador.
-4b. Rechazar sin inscritos: queda Rechazado y avisa al coordinador.
-4c. Rechazar con inscritos (era una edición): vuelve a las fechas y cupo anteriores (el cupo no baja de los confirmados), confirma a la espera si hay lugar, sigue Aprobado y avisa al coordinador y a los inscritos.
-
-**Rechazos y excepciones**
-
-- E1. No está Pendiente: «Solo se puede aceptar o rechazar un taller que está pendiente.»
-- E2. Está cancelado: «El taller fue cancelado: ya no se puede aceptar ni rechazar.»
-
-**Diagrama de flujo**
-
-```mermaid
-flowchart TD
-    A(["Operador abre Pendientes"]) --> B["Elige Aprobar o Rechazar en un taller"]
-    B --> C{"¿El taller está cancelado o ya no está pendiente?"}
-    C -- Sí --> R1["Muestra el error y no cambia nada"]
-    C -- No --> D{"¿Qué decidió?"}
-    D -- Aprobar --> E["Taller Aprobado y aviso al coordinador"]
-    D -- Rechazar --> F{"¿El taller ya tiene inscritos?"}
-    F -- No --> G["Taller Rechazado y aviso al coordinador"]
-    F -- Sí --> H["Era una edición: vuelve a sus fechas y cupo anteriores"]
-    H --> I["Sigue Aprobado y nadie pierde su plaza"]
-    I --> J["Aviso a cada inscrito y al coordinador"]
-    E --> Z(["Fin"])
-    G --> Z
-    J --> Z
-    R1 --> Z
-```
-
-**Diagrama de secuencia**
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor OP as Operador
-    participant Pan as Frontend<br/>Pantalla Pendientes<br/>talleres_pendientes.html
-    participant Vis as Backend: vista<br/>decidir_taller<br/>views.py
-    participant Ser as Backend: servicio<br/>operador.py
-    participant BD as Base de datos<br/>SQLite
-
-    OP->>Pan: Abre "Pendientes"
-    Pan-->>OP: Ve los talleres que esperan aprobación
-    OP->>Pan: Presiona Aprobar o Rechazar
-    Pan->>Vis: Envía la decisión
-    Vis->>Ser: decidir_solicitud_de_taller(operador, taller, decisión)
-    Ser->>BD: Lee el taller
-    alt El taller está cancelado o ya no está pendiente
-        Ser-->>Vis: Error con el motivo
-    else Aprobar
-        Ser->>BD: Estado = Aprobado
-        Ser->>BD: Aviso al coordinador: "Tu taller fue aprobado"
-    else Rechazar un taller nuevo (sin inscritos)
-        Ser->>BD: Estado = Rechazado
-        Ser->>BD: Aviso al coordinador: "Tu taller fue rechazado"
-    else Rechazar una edición (el taller ya tiene inscritos)
-        Ser->>BD: Vuelve a las fechas y cupo anteriores (del historial)
-        Ser->>BD: Sigue Aprobado y nadie pierde su plaza
-        Ser->>BD: Aviso a cada inscrito y al coordinador
-    end
-    Vis-->>Pan: Vuelve con el mensaje
-    Pan-->>OP: Ve el resultado
-```
-
-## 6. HU-04 — Editar fechas y cupo de un taller
-
-**Historia de usuario:** Como coordinador (también operador), quiero cambiar las fechas y el cupo de mis talleres eligiendo un motivo de la lista para ajustar el taller a imprevistos sin perder el historial de cambios.
-
-- **Criterio de aceptación:** Solo se editan fechas y cupo de un taller que no empezó ni está cancelado; nombre y categoría no cambian. El motivo se elige de la lista parametrizada (4 motivos más comunes, ampliable por el operador). Se guardan los datos anteriores con el motivo y la fecha. Si el cupo sube, la espera pasa a Confirmado en orden; el cupo no baja de los confirmados. Si edita el coordinador, el taller vuelve a Pendiente hasta que el operador lo apruebe.
-- **Requisitos que cumple:** TAL-RF-07, TAL-RF-10, TAL-RF-12, TAL-RT-03
-- **Casos de uso:** CU-06, CU-14
-- **Pruebas:** `test_coordinador.py`, `test_edicion_taller.py`, `test_editar_taller_pantalla.py`, `test_catalogos_operador.py`
-
-### 6.1 CU-06 — Editar fechas y cupo de un taller
-
-| Campo | Descripción |
-|---|---|
-| Actor | Coordinador (sus talleres) u Operador |
-| Objetivo | Corregir fechas o cupo conservando el motivo y el historial |
-| Disparador | Elige «Editar» en un taller |
-| Precondiciones | Inició sesión; el taller existe |
-| Poscondición de éxito | Fechas y cupo actualizados; historial con datos anteriores, motivo y fecha; Pendiente si editó el coordinador |
-
-**Flujo principal**
-
-1. El sistema muestra cupo, inicio, fin y la lista de motivos.
-2. El usuario cambia datos y elige un motivo.
-3. El sistema valida permisos, que el taller no esté cancelado ni haya empezado, el motivo, el cupo (4–40 y no menor que los confirmados) y las fechas.
-4. Guarda el historial y actualiza el taller (Pendiente si editó el coordinador).
-5. Si el cupo subió, confirma a la espera en orden hasta llenarlo y avisa a cada promovido.
-
-**Rechazos y excepciones**
-
-- E1. Datos inválidos o sin motivo: no guarda.
-- E2. Taller cancelado o ya empezado: no se puede editar («No puedes editar un taller que ha sido cancelado.» / «El taller ya empezó y no se puede editar.»).
-- E3. Coordinador con taller ajeno: 403.
-- E4. Cupo menor que los confirmados: «No se puede bajar el cupo a N: ya hay M participantes confirmados.»
-- E5. El operador rechaza la edición: ver CU-02.
-
-**Diagrama de flujo**
-
-```mermaid
-flowchart TD
-    A(["Coordinador u operador presiona Editar"]) --> B{"¿Es su taller o es operador?"}
-    B -- No --> R1["403: no tiene permiso"]
-    B -- Sí --> C{"¿El taller está cancelado o ya empezó?"}
-    C -- Sí --> R2["Rechaza: no se puede editar"]
-    C -- No --> D["Cambia fechas o cupo y elige un motivo de la lista"]
-    D --> E{"¿Datos válidos, motivo elegido y cupo no menor que los confirmados?"}
-    E -- No --> R3["Muestra el error y no guarda"]
-    E -- Sí --> F["Guarda en el historial los datos anteriores y el motivo"]
-    F --> G["Guarda las nuevas fechas y el cupo"]
-    G --> H{"¿Lo editó un coordinador?"}
-    H -- Sí --> I["Taller vuelve a Pendiente hasta que el operador decida"]
-    H -- No --> J["Sigue Aprobado"]
-    I --> K{"¿El cupo subió y hay gente en espera?"}
-    J --> K
-    K -- Sí --> L["Los primeros de la espera pasan a CONFIRMADO con aviso"]
-    K -- No --> Z(["Fin"])
-    L --> Z
-    R1 --> Z
-    R2 --> Z
-    R3 --> Z
-```
-
-**Diagrama de secuencia**
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor C as Coordinador
-    participant Pan as Frontend<br/>Pantalla Editar taller<br/>editar_taller.html
-    participant Vis as Backend: vista<br/>editar_taller<br/>views.py
-    participant Ser as Backend: servicio<br/>coordinador.py
-    participant BD as Base de datos<br/>SQLite
-
-    C->>Pan: Cambia fechas o cupo y elige un motivo de la lista
-    Pan->>Vis: Envía los cambios
-    Vis->>Ser: editar_taller(taller, datos, motivo, usuario)
-    Ser->>BD: Lee el taller y cuenta los confirmados
-    alt Taller ajeno, cancelado, ya empezado, sin motivo o cupo menor que los confirmados
-        Ser-->>Vis: Error con el motivo
-        Vis-->>Pan: Muestra el error
-        Pan-->>C: No se guarda nada
-    else Todo está bien
-        Ser->>BD: Guarda en el historial los datos anteriores y el motivo
-        Ser->>BD: Guarda las nuevas fechas y el cupo
-        opt Lo editó un coordinador
-            Ser->>BD: Estado = Pendiente (el operador decide en CU-02)
-        end
-        opt El cupo subió y hay gente en espera
-            Ser->>BD: Los primeros de la espera pasan a CONFIRMADO y reciben aviso
-        end
-        Ser-->>Vis: Taller actualizado
-        Vis-->>Pan: Vuelve a la lista de talleres
-        Pan-->>C: Ve el taller con sus nuevos datos
-    end
-```
-
-### 6.2 CU-14 — Agregar categorías y motivos de edición
-
-| Campo | Descripción |
-|---|---|
-| Actor | Operador |
-| Objetivo | Ampliar las listas parametrizadas |
-| Disparador | Entra a «Categorías y motivos» |
-| Precondiciones | Inició sesión como operador |
-| Poscondición de éxito | La nueva categoría o motivo aparece al crear o editar talleres |
-
-**Flujo principal**
-
-1. El sistema muestra las categorías y motivos actuales.
-2. El operador escribe uno nuevo.
-3. El sistema quita espacios, verifica que no esté vacío ni repetido (sin importar mayúsculas) y lo guarda.
-
-**Rechazos y excepciones**
-
-- E1. Vacío: lo rechaza.
-- E2. Repetido: «Ya existe una categoría con ese nombre.» / «Ya existe un motivo con esa descripción.»
-- E3. Otro rol: 403.
-
-**Diagrama de flujo**
-
-```mermaid
-flowchart TD
-    A(["Operador abre Categorías y motivos"]) --> B["Escribe una categoría o un motivo y presiona Agregar"]
-    B --> C{"¿Está vacío?"}
-    C -- Sí --> R1["Rechaza: no puede estar vacío"]
-    C -- No --> D{"¿Ya existe, sin importar mayúsculas?"}
-    D -- Sí --> R2["Rechaza: ya existe"]
-    D -- No --> E["Lo guarda"]
-    E --> F["Aparece al crear o editar talleres"]
-    F --> Z(["Fin"])
-    R1 --> Z
-    R2 --> Z
-```
-
-**Diagrama de secuencia**
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor OP as Operador
-    participant Pan as Frontend<br/>Pantalla Categorías y motivos<br/>gestionar_categorias_motivos.html
-    participant Vis as Backend: vista<br/>gestionar_categorias_motivos<br/>views.py
-    participant Ser as Backend: servicio<br/>operador.py
-    participant BD as Base de datos<br/>SQLite
-
-    OP->>Pan: Abre "Categorías y motivos"
-    Pan-->>OP: Ve las categorías y los motivos actuales
-    OP->>Pan: Escribe una categoría o un motivo y presiona Agregar
-    Pan->>Vis: Envía el texto
-    Vis->>Ser: agregar_categoria o agregar_motivo_edicion
-    Ser->>BD: ¿Ya existe (sin importar mayúsculas)?
-    alt Está vacío o ya existe
-        Ser-->>Vis: Error con el motivo
-    else Es nuevo
-        Ser->>BD: Lo guarda
-        Ser-->>Vis: Agregado
-    end
-    Vis-->>Pan: Vuelve con el mensaje
-    Pan-->>OP: Ya aparece en la lista para crear o editar talleres
-```
-
-## 7. HU-05 — Cancelar una inscripción
+### 6.2 HU-05 — Cancelar una inscripción
 
 **Historia de usuario:** Como participante (o el operador a su nombre), quiero cancelar mi inscripción o mi lugar en la lista de espera para liberar el cupo para otro compañero si ya no puedo asistir.
 
@@ -675,7 +1130,7 @@ sequenceDiagram
 - **Casos de uso:** CU-05
 - **Pruebas:** `test_operador.py`, `test_cancelar.py`, `test_notificaciones.py`, `e2e/test_recorridos.py`
 
-### 7.1 CU-05 — Cancelar una inscripción
+#### 6.2.1 CU-05 — Cancelar una inscripción
 
 | Campo | Descripción |
 |---|---|
@@ -756,149 +1211,7 @@ sequenceDiagram
     Pan-->>P: Ve su inscripción cancelada
 ```
 
-## 8. HU-06 — Ver los avisos en pantalla
-
-**Historia de usuario:** Como participante (también coordinador), quiero ver en pantalla los avisos de lo que cambió para enterarme sin que me envíen mensajes por fuera.
-
-- **Criterio de aceptación:** Solo en pantalla (decisión del cliente): inscripción, espera, promoción, cancelación, bloqueo, taller cancelado, vuelta al horario original y aprobación o rechazo de talleres. El más nuevo primero; los no leídos aparecen como «Nuevo:» y al abrir la pantalla quedan leídos.
-- **Requisitos que cumple:** TAL-RF-13
-- **Casos de uso:** CU-10
-- **Pruebas:** `test_notificaciones.py`
-
-### 8.1 CU-10 — Ver notificaciones
-
-| Campo | Descripción |
-|---|---|
-| Actor | Participante, Coordinador u Operador |
-| Objetivo | Enterarse de los cambios que lo afectan |
-| Disparador | Entra a «Notificaciones» |
-| Precondiciones | Inició sesión |
-| Poscondición de éxito | Ve sus avisos y quedan marcados como leídos |
-
-**Flujo principal**
-
-1. El sistema obtiene los avisos del usuario, el más nuevo primero.
-2. Los muestra con fecha, taller y mensaje; los no leídos con «Nuevo:».
-3. Los marca como leídos.
-
-**Rechazos y excepciones**
-
-- E1. Sin avisos: «No tienes notificaciones.»
-
-**Diagrama de flujo**
-
-```mermaid
-flowchart TD
-    A(["Usuario abre Notificaciones"]) --> B["Busca sus avisos, el más nuevo primero"]
-    B --> C{"¿Tiene avisos?"}
-    C -- No --> D["Muestra: No tienes notificaciones"]
-    C -- Sí --> E["Muestra fecha, taller y mensaje, los nuevos con la palabra Nuevo"]
-    E --> F["Marca todos como leídos"]
-    D --> Z(["Fin"])
-    F --> Z
-```
-
-**Diagrama de secuencia**
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as Usuario
-    participant Pan as Frontend<br/>Pantalla Notificaciones<br/>notificaciones.html
-    participant Vis as Backend: vista<br/>notificaciones<br/>views.py
-    participant Ser as Backend: servicio<br/>notificaciones.py
-    participant BD as Base de datos<br/>SQLite
-
-    U->>Pan: Abre "Notificaciones"
-    Pan->>Vis: Pide sus avisos
-    Vis->>Ser: listar_notificaciones(usuario)
-    Ser->>BD: Busca sus avisos, el más nuevo primero
-    BD-->>Vis: Avisos
-    Vis->>Ser: marcar_todas_como_leidas(usuario)
-    Ser->>BD: Marca los avisos como leídos
-    alt No tiene avisos
-        Vis-->>Pan: "No tienes notificaciones."
-    else Tiene avisos
-        Vis-->>Pan: Lista de avisos
-        Pan-->>U: Fecha, taller y mensaje (los nuevos dicen "Nuevo:")
-    end
-    Note over U,BD: Los avisos solo se ven en pantalla, como pidió el cliente
-```
-
-## 9. HU-07 — Consultar la ocupación
-
-**Historia de usuario:** Como coordinador (también operador), quiero consultar la ocupación de mis talleres para saber cuántas plazas están ocupadas, cuántas libres y cuántas personas esperan.
-
-- **Criterio de aceptación:** Muestra cupo, ocupadas, libres (nunca negativas) y «en espera de máximo»; los cancelados no cuentan. El coordinador solo ve sus talleres (uno ajeno responde 403); el operador ve todos. No modifica datos.
-- **Requisitos que cumple:** TAL-RF-14
-- **Casos de uso:** CU-08
-- **Pruebas:** `test_operador.py`, `test_coordinador_solo_lo_suyo.py`
-
-### 9.1 CU-08 — Consultar la ocupación de un taller
-
-| Campo | Descripción |
-|---|---|
-| Actor | Coordinador (sus talleres) u Operador |
-| Objetivo | Saber cuántas plazas están ocupadas y libres y cuántas personas esperan |
-| Disparador | Presiona «Ver ocupación» |
-| Precondiciones | Inició sesión; el taller existe |
-| Poscondición de éxito | Ve cupo, ocupadas, libres y espera/máximo; no se modifican datos |
-
-**Flujo principal**
-
-1. El sistema cuenta Confirmados y En espera (los cancelados no cuentan).
-2. Calcula libres = cupo − confirmados (mínimo 0) y el máximo de espera.
-3. Muestra los datos y «(lleno)» si no quedan plazas.
-
-**Rechazos y excepciones**
-
-- E1. Taller inexistente: 404.
-- E2. Coordinador con taller ajeno: 403.
-
-**Diagrama de flujo**
-
-```mermaid
-flowchart TD
-    A(["Coordinador u operador presiona Ver ocupación"]) --> B{"¿El taller existe?"}
-    B -- No --> R1["404: no encontrado"]
-    B -- Sí --> C{"¿Es un coordinador con un taller ajeno?"}
-    C -- Sí --> R2["403: no tiene permiso"]
-    C -- No --> D["Cuenta confirmados y personas en espera"]
-    D --> E["Calcula libres = cupo menos confirmados y el máximo de espera"]
-    E --> F["Muestra cupo, ocupadas, libres y espera N de M"]
-    F --> Z(["Fin"])
-    R1 --> Z
-    R2 --> Z
-```
-
-**Diagrama de secuencia**
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor C as Coordinador u Operador
-    participant Pan as Frontend<br/>Pantalla Ocupación<br/>ocupacion_taller.html
-    participant Vis as Backend: vista<br/>ocupacion_taller<br/>views.py
-    participant Ser as Backend: servicio<br/>operador.py
-    participant BD as Base de datos<br/>SQLite
-
-    C->>Pan: Presiona "Ver ocupación"
-    Pan->>Vis: Pide la ocupación del taller
-    alt Un coordinador pide un taller que no es suyo
-        Vis-->>Pan: 403 Prohibido
-    else Puede verlo
-        Vis->>Ser: calcular_ocupacion(taller)
-        Ser->>BD: Cuenta confirmados y personas en espera
-        BD-->>Ser: Cantidades
-        Ser->>Ser: Libres = cupo - confirmados, máximo de espera = 20 % del cupo
-        Ser-->>Vis: Ocupadas, libres, en espera y máximo
-        Vis-->>Pan: Muestra la tabla
-        Pan-->>C: Cupo, ocupadas, libres y "espera N de M"
-    end
-    Note over Vis,BD: Solo lee: no cambia ningún dato
-```
-
-## 10. HU-08 — Ver mis inscripciones
+### 6.3 HU-08 — Ver mis inscripciones
 
 **Historia de usuario:** Como participante, quiero consultar el estado de mis inscripciones para saber si tengo lugar confirmado o en qué posición de la espera estoy.
 
@@ -907,7 +1220,7 @@ sequenceDiagram
 - **Casos de uso:** CU-09
 - **Pruebas:** `test_participante.py`
 
-### 10.1 CU-09 — Ver mis inscripciones
+#### 6.3.1 CU-09 — Ver mis inscripciones
 
 | Campo | Descripción |
 |---|---|
@@ -967,234 +1280,7 @@ sequenceDiagram
     Note over Vis,BD: El operador puede elegir a un participante y ver sus inscripciones
 ```
 
-## 11. HU-09 — Historial de cancelaciones y bloqueo
-
-**Historia de usuario:** Como operador, quiero ver el historial de cancelaciones, saber quién está bloqueado y poder levantar el bloqueo para que quien cancela demasiado no quite oportunidades a los demás.
-
-- **Criterio de aceptación:** Más de 3 cancelaciones en 72 horas bloquean 24 horas: no puede inscribirse y pierde sus inscripciones y lugares de espera en talleres que no empezaron (sus plazas pasan al siguiente en espera). Si vuelve a pasar, otra vez 24 horas. El operador ve el historial y hasta cuándo dura el bloqueo, y puede levantarlo cuando quiera: el historial se conserva completo y queda registrado quién lo levantó y cuándo. Cancelar un taller completo no cuenta.
-- **Requisitos que cumple:** TAL-RF-08
-- **Casos de uso:** CU-11, CU-12
-- **Pruebas:** `test_baneo.py`, `test_operador.py`, `test_notificaciones.py`
-
-### 11.1 CU-11 — Bloquear por exceso de cancelaciones
-
-| Campo | Descripción |
-|---|---|
-| Actor | Sistema |
-| Objetivo | Frenar a quien cancela demasiado |
-| Disparador | Un participante cancela (CU-05) |
-| Precondiciones | Existe su historial de cancelaciones |
-| Poscondición de éxito | Con más de 3 cancelaciones en 72 horas queda bloqueado 24 horas, pierde inscripciones y espera en talleres que no empezaron y recibe el aviso |
-
-**Flujo principal**
-
-1. Tras cada cancelación, el sistema cuenta las cancelaciones de las 72 horas anteriores.
-2. Si son más de 3, calcula el fin del bloqueo (24 horas).
-3. Avisa el bloqueo.
-4. Lo saca de las listas de espera (se renumeran) y cancela sus confirmados; cada plaza pasa al siguiente en espera.
-5. Mientras dure, CU-04 rechaza sus solicitudes. Si reincide, otra vez 24 horas.
-
-**Rechazos y excepciones**
-
-- E1. 3 o menos en 72 horas: no se bloquea.
-- E2. Talleres ya empezados: no se tocan.
-- E3. El operador levantó el bloqueo (CU-12): las cancelaciones anteriores ya no cuentan.
-
-**Diagrama de flujo**
-
-```mermaid
-flowchart TD
-    A(["Un participante cancela una inscripción (CU-05)"]) --> B["Cuenta sus cancelaciones desde el último bloqueo levantado"]
-    B --> C{"¿Más de 3 en 72 horas?"}
-    C -- No --> Z(["Fin: no pasa nada"])
-    C -- Sí --> D["Queda bloqueado 24 horas desde esa cancelación"]
-    D --> E["Aviso: Quedaste bloqueado hasta ..."]
-    E --> F["Sale de todas sus listas de espera de talleres que no empezaron"]
-    F --> G["Pierde sus inscripciones confirmadas de talleres que no empezaron"]
-    G --> H["Cada plaza que dejó pasa al primero en espera"]
-    H --> I["Mientras dure, CU-04 rechaza sus solicitudes"]
-    I --> Y(["Fin"])
-```
-
-**Diagrama de secuencia**
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Ser as Backend: servicio<br/>operador.py
-    participant BD as Base de datos<br/>SQLite
-    actor P as Participante
-
-    Note over Ser: Se ejecuta después de cada cancelación (CU-05)
-    Ser->>BD: Trae sus cancelaciones y la fecha del último bloqueo levantado
-    BD-->>Ser: Fechas
-    Ser->>Ser: Desde el último levantamiento, ¿más de 3 cancelaciones en 72 horas?
-    alt 3 o menos
-        Ser->>Ser: No pasa nada
-    else Más de 3
-        Ser->>BD: Bloqueado 24 horas desde esa cancelación
-        Ser->>BD: Aviso: "Quedaste bloqueado hasta el ..."
-        Ser->>BD: Sale de todas sus listas de espera (talleres que no empezaron)
-        Ser->>BD: Pierde sus inscripciones confirmadas (talleres que no empezaron)
-        Ser->>BD: Cada plaza que dejó pasa al primero en espera
-    end
-    P->>Ser: Mientras está bloqueado intenta inscribirse (CU-04)
-    Ser-->>P: "Bloqueado hasta el ..."
-    Note over Ser,BD: Si vuelve a pasar, otra vez 24 horas. El operador puede levantarlo (CU-12)
-```
-
-### 11.2 CU-12 — Consultar el historial de cancelaciones y levantar un bloqueo
-
-| Campo | Descripción |
-|---|---|
-| Actor | Operador |
-| Objetivo | Ver cuándo canceló un participante, si está bloqueado y quitar el bloqueo |
-| Disparador | Entra a «Historial de cancelaciones» y elige a un participante |
-| Precondiciones | Inició sesión como operador |
-| Poscondición de éxito | Ve las cancelaciones y el bloqueo. Si lo levanta, el participante puede volver a inscribirse y queda registrado qué operador lo levantó y cuándo |
-
-**Flujo principal**
-
-1. El operador elige al participante.
-2. El sistema muestra sus cancelaciones (de la más reciente a la más antigua) y hasta cuándo está bloqueado.
-3. Si está bloqueado, el operador puede presionar «Levantar bloqueo».
-4. El sistema registra qué operador levantó el bloqueo y cuándo; el historial de cancelaciones se conserva completo y las cancelaciones anteriores ya no cuentan para un bloqueo.
-
-**Rechazos y excepciones**
-
-- E1. Sin cancelaciones: lista vacía.
-- E2. Participante inexistente: 404.
-- E3. Quien levanta no es operador: «Solo el operador puede hacer esta acción.»
-- E4. No tiene un bloqueo activo: «El participante no tiene un bloqueo activo.»
-
-**Diagrama de flujo**
-
-```mermaid
-flowchart TD
-    A(["Operador abre Historial de cancelaciones"]) --> B["Elige un participante"]
-    B --> C["Ve sus cancelaciones con taller y fecha"]
-    C --> D{"¿Está bloqueado?"}
-    D -- No --> Z(["Fin"])
-    D -- Sí --> E["Ve hasta cuándo dura el bloqueo y el botón Levantar bloqueo"]
-    E --> F{"¿Lo quiere levantar?"}
-    F -- No --> Z
-    F -- Sí --> G{"¿El bloqueo sigue activo?"}
-    G -- No --> R1["Rechaza: el participante no tiene un bloqueo activo"]
-    G -- Sí --> H["Registra qué operador lo levantó y cuándo"]
-    H --> I["Las cancelaciones se conservan pero las anteriores ya no cuentan"]
-    I --> J["El participante puede volver a inscribirse"]
-    J --> Z
-    R1 --> Z
-```
-
-**Diagrama de secuencia**
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor OP as Operador
-    participant Pan as Frontend<br/>Pantalla Historial de cancelaciones<br/>historial_cancelaciones.html
-    participant Vis as Backend: vista<br/>historial / levantar_bloqueo<br/>views.py
-    participant Ser as Backend: servicio<br/>operador.py
-    participant BD as Base de datos<br/>SQLite
-
-    OP->>Pan: Elige un participante y presiona "Ver historial"
-    Pan->>Vis: Pide su historial
-    Vis->>Ser: consultar_historial_cancelaciones y calcular_fin_del_bloqueo
-    Ser->>BD: Busca sus cancelaciones y bloqueos
-    BD-->>Vis: Cancelaciones y fecha de fin del bloqueo
-    Vis-->>Pan: Muestra la lista
-    Pan-->>OP: Cada cancelación con taller y fecha, y si está bloqueado
-    opt Está bloqueado y el operador lo quiere levantar
-        OP->>Pan: Presiona "Levantar bloqueo" y confirma
-        Pan->>Vis: Envía el pedido
-        Vis->>Ser: levantar_bloqueo(operador, participante)
-        alt No tiene un bloqueo activo
-            Ser-->>Vis: "El participante no tiene un bloqueo activo."
-        else Tiene un bloqueo activo
-            Ser->>BD: Registra quién levantó el bloqueo y cuándo
-            Note over Ser,BD: No se borra ninguna cancelación.<br/>Las anteriores a este momento ya no cuentan para un nuevo bloqueo
-            Ser-->>Vis: Bloqueo levantado
-        end
-        Vis-->>Pan: Vuelve al historial con el mensaje
-        Pan-->>OP: El participante ya puede inscribirse
-    end
-```
-
-## 12. HU-10 — Buscar inscripciones
-
-**Historia de usuario:** Como operador, quiero buscar inscripciones por participante o por taller para responder consultas: qué talleres hay, si hay espacio, quiénes están inscritos y en qué orden espera cada uno.
-
-- **Criterio de aceptación:** Se busca por código, usuario, nombre o apellido del participante, o por código o nombre del taller. Muestra taller, participante, estado y posición; con el código de un taller se ven sus confirmados, su espera en orden y sus cancelados. Sin texto no devuelve nada. No modifica datos.
-- **Requisitos que cumple:** TAL-RF-14
-- **Casos de uso:** CU-13
-- **Pruebas:** `test_operador.py`, `test_buscar.py`
-
-### 12.1 CU-13 — Buscar inscripciones
-
-| Campo | Descripción |
-|---|---|
-| Actor | Operador |
-| Objetivo | Responder consultas sobre talleres, espacios, inscritos y orden de la espera |
-| Disparador | Escribe en «Buscar inscripciones» |
-| Precondiciones | Inició sesión como operador |
-| Poscondición de éxito | Ve las inscripciones que coinciden; no se modifican datos |
-
-**Flujo principal**
-
-1. El operador escribe un código, nombre o apellido de participante, o un código o nombre de taller.
-2. El sistema busca sin importar mayúsculas.
-3. Muestra taller, participante, estado y posición. Con el código de un taller se ven sus confirmados, su espera en orden y sus cancelados.
-
-**Rechazos y excepciones**
-
-- E1. Sin texto: no muestra resultados.
-- E2. Sin coincidencias: lista vacía.
-
-**Diagrama de flujo**
-
-```mermaid
-flowchart TD
-    A(["Operador abre Buscar inscripciones"]) --> B["Escribe un código, nombre o apellido, o un código o nombre de taller"]
-    B --> C{"¿Escribió algo?"}
-    C -- No --> D["Sin resultados"]
-    C -- Sí --> E["Busca coincidencias sin importar mayúsculas"]
-    E --> F{"¿Hay coincidencias?"}
-    F -- No --> G["Lista vacía"]
-    F -- Sí --> H["Muestra taller, participante, estado y posición"]
-    D --> Z(["Fin"])
-    G --> Z
-    H --> Z
-```
-
-**Diagrama de secuencia**
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor OP as Operador
-    participant Pan as Frontend<br/>Pantalla Buscar inscripciones<br/>buscar_inscripciones.html
-    participant Vis as Backend: vista<br/>buscar_inscripciones<br/>views.py
-    participant Ser as Backend: servicio<br/>operador.py
-    participant BD as Base de datos<br/>SQLite
-
-    OP->>Pan: Escribe un código o nombre de participante, o un código o nombre de taller
-    Pan->>Vis: Envía la búsqueda
-    alt No escribió nada
-        Vis-->>Pan: Sin resultados
-    else Escribió algo
-        Vis->>Ser: buscar_inscripciones(texto)
-        Ser->>BD: Busca inscripciones que coincidan (sin importar mayúsculas)
-        BD-->>Ser: Coincidencias
-        Ser-->>Vis: Resultados ordenados por fecha del taller
-        Vis-->>Pan: Muestra la tabla
-        Pan-->>OP: Taller, participante, estado y posición en la espera
-    end
-    Note over OP,Pan: Con el código de un taller (TAL-DAN-01) se ven sus confirmados,<br/>su espera en orden y sus cancelados
-    Note over Vis,BD: Solo lee: no cambia ningún dato
-```
-
-## 13. HU-11 — Buscar talleres por categoría
+### 6.4 HU-11 — Buscar talleres por categoría
 
 **Historia de usuario:** Como participante, quiero buscar talleres por categoría para encontrar rápido los del tipo que me interesa.
 
@@ -1203,15 +1289,107 @@ sequenceDiagram
 - **Casos de uso:** CU-03, CU-14
 - **Pruebas:** `test_participante.py`, `test_catalogos_operador.py`
 
-### 13.1 CU-03 — Ver y buscar talleres
+#### 6.4.1 CU-03 — Ver y buscar talleres
 
-Este caso de uso también sirve a HU-11. Su ficha y sus diagramas están en la sección 3.2.
+Este caso de uso también sirve a HU-11. Su ficha y sus diagramas están en la sección 4.1.2.
 
-### 13.2 CU-14 — Agregar categorías y motivos de edición
+#### 6.4.2 CU-14 — Agregar categorías y motivos de edición
 
-Este caso de uso también sirve a HU-11. Su ficha y sus diagramas están en la sección 6.2.
+Este caso de uso también sirve a HU-11. Su ficha y sus diagramas están en la sección 4.2.2.
 
-## 14. HU-12 — Crear cuenta e iniciar sesión
+## 7. Funciones compartidas
+
+Estas historias las usan los tres roles: entrar al sistema (y crear la cuenta si es estudiante) y ver los avisos en pantalla.
+
+```mermaid
+flowchart LR
+    CO["👤<br/>Coordinador"]
+    OP["👤<br/>Operador"]
+    PA["👤<br/>Participante"]
+    subgraph S["Sistema de inscripciones a talleres"]
+        CU15(["CU-15<br/>Crear cuenta e iniciar sesión"])
+        CU10(["CU-10<br/>Ver notificaciones"])
+    end
+    CO --- CU15
+    CO --- CU10
+    OP --- CU15
+    OP --- CU10
+    PA --- CU15
+    PA --- CU10
+```
+
+Historias de esta parte: HU-06 (ver los avisos en pantalla), HU-12 (crear cuenta e iniciar sesión).
+
+### 7.1 HU-06 — Ver los avisos en pantalla
+
+**Historia de usuario:** Como participante (también coordinador), quiero ver en pantalla los avisos de lo que cambió para enterarme sin que me envíen mensajes por fuera.
+
+- **Criterio de aceptación:** Solo en pantalla (decisión del cliente): inscripción, espera, promoción, cancelación, bloqueo, taller cancelado, vuelta al horario original y aprobación o rechazo de talleres. El más nuevo primero; los no leídos aparecen como «Nuevo:» y al abrir la pantalla quedan leídos.
+- **Requisitos que cumple:** TAL-RF-13
+- **Casos de uso:** CU-10
+- **Pruebas:** `test_notificaciones.py`
+
+#### 7.1.1 CU-10 — Ver notificaciones
+
+| Campo | Descripción |
+|---|---|
+| Actor | Participante, Coordinador u Operador |
+| Objetivo | Enterarse de los cambios que lo afectan |
+| Disparador | Entra a «Notificaciones» |
+| Precondiciones | Inició sesión |
+| Poscondición de éxito | Ve sus avisos y quedan marcados como leídos |
+
+**Flujo principal**
+
+1. El sistema obtiene los avisos del usuario, el más nuevo primero.
+2. Los muestra con fecha, taller y mensaje; los no leídos con «Nuevo:».
+3. Los marca como leídos.
+
+**Rechazos y excepciones**
+
+- E1. Sin avisos: «No tienes notificaciones.»
+
+**Diagrama de flujo**
+
+```mermaid
+flowchart TD
+    A(["Usuario abre Notificaciones"]) --> B["Busca sus avisos, el más nuevo primero"]
+    B --> C{"¿Tiene avisos?"}
+    C -- No --> D["Muestra: No tienes notificaciones"]
+    C -- Sí --> E["Muestra fecha, taller y mensaje, los nuevos con la palabra Nuevo"]
+    E --> F["Marca todos como leídos"]
+    D --> Z(["Fin"])
+    F --> Z
+```
+
+**Diagrama de secuencia**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Usuario
+    participant Pan as Frontend<br/>Pantalla Notificaciones<br/>notificaciones.html
+    participant Vis as Backend: vista<br/>notificaciones<br/>views.py
+    participant Ser as Backend: servicio<br/>notificaciones.py
+    participant BD as Base de datos<br/>SQLite
+
+    U->>Pan: Abre "Notificaciones"
+    Pan->>Vis: Pide sus avisos
+    Vis->>Ser: listar_notificaciones(usuario)
+    Ser->>BD: Busca sus avisos, el más nuevo primero
+    BD-->>Vis: Avisos
+    Vis->>Ser: marcar_todas_como_leidas(usuario)
+    Ser->>BD: Marca los avisos como leídos
+    alt No tiene avisos
+        Vis-->>Pan: "No tienes notificaciones."
+    else Tiene avisos
+        Vis-->>Pan: Lista de avisos
+        Pan-->>U: Fecha, taller y mensaje (los nuevos dicen "Nuevo:")
+    end
+    Note over U,BD: Los avisos solo se ven en pantalla, como pidió el cliente
+```
+
+### 7.2 HU-12 — Crear cuenta e iniciar sesión
 
 **Historia de usuario:** Como usuario (estudiante, coordinador u operador), quiero crear mi cuenta si soy estudiante, entrar con mi código y contraseña y ver solo las opciones de mi rol para que nadie haga acciones que no le corresponden.
 
@@ -1220,7 +1398,7 @@ Este caso de uso también sirve a HU-11. Su ficha y sus diagramas están en la s
 - **Casos de uso:** CU-15
 - **Pruebas:** `test_sesion.py`, `test_registro.py`, `test_login_redireccion.py`, `test_permisos.py`, `e2e/test_recorridos.py`
 
-### 14.1 CU-15 — Crear cuenta e iniciar sesión
+#### 7.2.1 CU-15 — Crear cuenta e iniciar sesión
 
 | Campo | Descripción |
 |---|---|
@@ -1310,7 +1488,7 @@ sequenceDiagram
     Note over U,BD: Cada rol ve solo su menú. Si escribe la dirección de otra pantalla recibe 403
 ```
 
-## 15. Trazabilidad del flujo elegido (HU-02 / CU-04)
+## 8. Trazabilidad del flujo elegido (HU-02 / CU-04)
 
 | Requisito | Paso o rama del diagrama de flujo | Escenario de la sesión 6 y prueba |
 |---|---|---|
@@ -1323,14 +1501,14 @@ sequenceDiagram
 | TAL-RC-01 | «El sistema bloquea el taller hasta terminar» | `test_simultaneas.py` |
 | Duplicado (TAL-04) | «¿Ya tiene inscripción activa? Sí» | `test_duplicado_rechazado_sin_cambios` |
 
-## 16. Revisión
+## 9. Revisión
 
 - **Revisión por otro equipo:** no se hizo revisión con otro equipo (la actividad era opcional).
 - **Escenarios recorridos internamente:** normal (`TAL-DAN-01` 5/10), límite (20/20 con espera 4/4) y rechazo por choque de horario.
 - **Observación:** la primera versión ponía «no tener más de 3 cancelaciones en 72 horas» como **precondición** de CU-04. Así la ruta de rechazo por bloqueo nunca podía ocurrir.
 - **Corrección:** el bloqueo pasó a ser una comprobación dentro del flujo (E2). Además, el choque de horario ahora cuenta también las inscripciones en espera.
 
-## 17. Cambios en los requisitos
+## 10. Cambios en los requisitos
 
 | Requisito | Cambio | Confirmación del cliente | Efecto en los modelos |
 |---|---|---|---|
@@ -1345,7 +1523,7 @@ sequenceDiagram
 
 Estos cambios también están en [sesion-06-requisitos.md](sesion-06-requisitos.md).
 
-## 18. Siguiente paso y participación
+## 11. Siguiente paso y participación
 
 - **Siguiente paso:** presentar al cliente el incremento final, recorriendo el flujo de CU-04 con los escenarios normal, límite y rechazo de la sesión 6, y mostrar la suite de pruebas pasando en `main`.
 - **Aportes de cada integrante:** los tres redactaron historias y casos de uso de su parte del sistema y revisaron el flujo elegido con los escenarios de la sesión 6.

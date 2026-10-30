@@ -406,5 +406,5 @@ Este recorrido está automatizado en `tests/e2e/test_recorridos.py` y en `tests/
 | Esquema y datos de demostración de la base de datos | Migraciones en `inscripciones/migrations/`, comando `poblar_db` (categorías y motivos) y carga de datos de demostración descrita en el `README.md` | Cumple |
 | Requisitos vigentes | Este documento (secciones 1 y 3) | Cumple |
 | Relación entre requisitos y pruebas | Línea «Comprobado por» de cada requisito y tabla de requisitos, historias y casos de uso (sección 1) de [sesion-07-modelos.md](sesion-07-modelos.md) | Cumple |
-| Registro breve de los cambios aprobados | Línea «Cambio posterior» de cada requisito y sección 17 de [sesion-07-modelos.md](sesion-07-modelos.md) | Cumple |
+| Registro breve de los cambios aprobados | Línea «Cambio posterior» de cada requisito y sección 10 de [sesion-07-modelos.md](sesion-07-modelos.md) | Cumple |
 | Cómo ejecutar las pruebas sin modificar una base de datos real | Las pruebas usan bases propias (`test_db.sqlite3` y `test_estudiantes.sqlite3`), explicado en `README.md` | Cumple |
