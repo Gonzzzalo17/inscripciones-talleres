@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from .forms import TallerForm,EditarTallerForm
-from .models import Inscripcion, Taller, Usuario
+from .models import Inscripcion, Taller, Usuario, Categoria, MotivoEdicion
 from .servicios.operador import Operador
 from .servicios.coordinador import Coordinador
 from django.utils import timezone
@@ -13,7 +13,7 @@ from django.contrib import messages
 from .acceso import solo_para, TODOS
 from .servicios.sesion import Sesion
 from .servicios.participante import Participante
-
+from .servicios.permisos import puede_manejar_el_taller
 
 @solo_para(*TODOS)
 def lista_talleres(request):
@@ -176,7 +176,10 @@ def ocupacion_taller(request, pk):
 @solo_para(Usuario.Rol.COORDINADOR, Usuario.Rol.OPERADOR)
 def editar_taller(request, pk):
     taller = get_object_or_404(Taller, pk=pk)
-
+    if not puede_manejar_el_taller(request.user, taller):
+        return HttpResponseForbidden(
+            "No tienes permiso para editar este taller."
+        )
     if request.method == 'POST':
         form = EditarTallerForm(request.POST, instance=taller)
 
@@ -309,4 +312,106 @@ def decidir_taller(request, pk):
             messages.error(request, "Elige aprobar o rechazar.")
     except ValidationError as e:
         messages.error(request, e.messages[0])  # ej: "Solo se puede aceptar o rechazar un taller que está pendiente."
+    return redirect('lista_talleres')
+
+@solo_para(Usuario.Rol.OPERADOR)
+def talleres_pendientes(request):
+    talleres = (
+        Taller.objects
+        .filter(estado=Taller.Estado.PENDIENTE, cancelado=False)
+        .select_related('categoria', 'coordinador')
+        .annotate(
+            ocupadas=Count(
+                'inscripciones',
+                filter=Q(inscripciones__estado='CONFIRMADO')
+            ),
+            en_espera=Count(
+                'inscripciones',
+                filter=Q(inscripciones__estado='EN_ESPERA')
+            ),
+        )
+        .order_by('fecha_inicio')
+    )
+
+    return render(
+        request,
+        'inscripciones/talleres_pendientes.html',
+        {'talleres': talleres}
+    )
+
+@solo_para(Usuario.Rol.OPERADOR)
+def gestionar_categorias_motivos(request):
+    if request.method == 'POST':
+        tipo = request.POST.get('tipo')
+
+        try:
+            if tipo == 'categoria':
+                Operador.agregar_categoria(
+                    request.user,
+                    request.POST.get('nombre', '')
+                )
+                messages.success(request, "Categoría agregada correctamente.")
+
+            elif tipo == 'motivo':
+                Operador.agregar_motivo_edicion(
+                    request.user,
+                    request.POST.get('descripcion', '')
+                )
+                messages.success(request, "Motivo agregado correctamente.")
+
+            else:
+                messages.error(request, "Tipo de registro no válido.")
+
+        except ValidationError as e:
+            messages.error(request, e.messages[0])
+
+        return redirect('gestionar_categorias_motivos')
+
+    contexto = {
+        'categorias': Categoria.objects.all().order_by('nombre'),
+        'motivos': MotivoEdicion.objects.all().order_by('descripcion'),
+    }
+
+    return render(
+        request,
+        'inscripciones/gestionar_categorias_motivos.html',
+        contexto
+    )
+
+@solo_para(Usuario.Rol.OPERADOR)
+@require_POST
+def levantar_bloqueo(request, participante_id):
+    participante = get_object_or_404(
+        Usuario,
+        pk=participante_id,
+        rol=Usuario.Rol.PARTICIPANTE
+    )
+
+    try:
+        Operador.levantar_bloqueo(request.user, participante)
+        messages.success(
+            request,
+            f"Se levantó el bloqueo de {participante.username}."
+        )
+    except ValidationError as e:
+        messages.error(request, e.messages[0])
+
+    return redirect(
+        f"/historial-cancelaciones/?participante_id={participante.pk}"
+    )
+
+@solo_para(Usuario.Rol.COORDINADOR, Usuario.Rol.OPERADOR)
+@require_POST
+def cancelar_taller(request, pk):
+    taller = get_object_or_404(Taller, pk=pk)
+
+    try:
+        Operador.cancelar_taller(request.user, taller)
+        messages.success(
+            request,
+            f"Se canceló el taller {taller.nombre}."
+        )
+    except ValidationError as e:
+        messages.error(request, e.messages[0])
+
     return redirect('lista_talleres')

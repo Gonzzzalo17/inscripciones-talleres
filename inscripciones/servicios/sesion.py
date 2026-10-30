@@ -19,8 +19,7 @@ class Sesion:
         # Busca la cuenta por su código y comprueba la contraseña.
         # Devuelve el usuario y el nombre de la pantalla a la que debe ir.
         codigo = (codigo or "").strip()
-        usuario = Usuario.objects.filter(username=codigo).first()
-
+        usuario = Usuario.objects.filter(codigo=codigo).first()
         # Mismo mensaje si el código no existe o si la contraseña está mal:
         # así nadie puede averiguar qué códigos tienen cuenta.
         if usuario is None or not usuario.is_active or not usuario.check_password(contrasena or ""):

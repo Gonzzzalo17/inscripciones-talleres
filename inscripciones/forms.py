@@ -1,9 +1,19 @@
 from django import forms
 from datetime import timedelta
+from django.utils import timezone
 from .models import Taller, MotivoEdicion
 
 
 class TallerForm(forms.ModelForm):
+    cupo_maximo = forms.IntegerField(
+        min_value=4,
+        max_value=40,
+        error_messages={
+            'min_value': 'El cupo mínimo permitido es 4.',
+            'max_value': 'El cupo máximo permitido es 40.',
+            'invalid': 'Ingresa un número válido.',
+        }
+    )
     class Meta:
         model = Taller
         fields = ['nombre','categoria', 'cupo_maximo', 'fecha_inicio', 'fecha_fin']
@@ -19,8 +29,41 @@ class TallerForm(forms.ModelForm):
             'fecha_fin': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
         }
 
+    def clean(self):
+        datos = super().clean()
+        inicio = datos.get('fecha_inicio')
+        fin = datos.get('fecha_fin')
+
+        if inicio and inicio <= timezone.now():
+            self.add_error(
+                'fecha_inicio',
+                'La fecha y hora de inicio deben ser futura.'
+            )
+
+        if inicio and fin:
+            if fin <= inicio:
+                self.add_error(
+                    'fecha_fin',
+                    'La fecha de fin debe ser posterior al inicio.'
+                )
+            elif fin > inicio + timedelta(days=7):
+                self.add_error(
+                    'fecha_fin',
+                    'La duración del taller no puede superar los 7 días.'
+                )
+
+        return datos
 
 class EditarTallerForm(forms.ModelForm):
+    cupo_maximo = forms.IntegerField(
+        min_value=4,
+        max_value=40,
+        error_messages={
+            'min_value': 'El cupo mínimo permitido es 4.',
+            'max_value': 'El cupo máximo permitido es 40.',
+            'invalid': 'Ingresa un número válido.',
+        }
+    )
     motivo = forms.ModelChoiceField(
         queryset=MotivoEdicion.objects.all(),
         label="Motivo de edición",
@@ -51,33 +94,22 @@ class EditarTallerForm(forms.ModelForm):
         datos = super().clean()
         inicio = datos.get('fecha_inicio')
         fin = datos.get('fecha_fin')
-
-        if inicio and fin and fin <= inicio:
-            raise forms.ValidationError(
-                "La fecha de fin debe ser posterior a la de inicio."
+        if inicio and inicio <= timezone.now():
+            self.add_error(
+                'fecha_inicio',
+                'La fecha y hora de inicio debe ser futura.'
             )
 
-        if inicio and fin and fin > inicio + timedelta(days=7):
-            raise forms.ValidationError(
-                "La duración del taller no puede superar los 7 días."
-            )
+        if inicio and fin:
+            if fin <= inicio:
+                self.add_error(
+                    'fecha_fin',
+                    'La fecha de fin debe ser posterior al inicio.'
+                )
+            elif fin > inicio + timedelta(days=7):
+                self.add_error(
+                    'fecha_fin',
+                    'La duración del taller no puede superar los 7 días.'
+                )
 
-        return datos
-
-    def clean_categoria(self):
-        categoria = self.cleaned_data.get('categoria')
-        if categoria is None:
-            raise forms.ValidationError(
-                "La categoría del taller es obligatoria."
-            )
-        return categoria
-
-    def clean(self):
-        datos = super().clean()
-        inicio = datos.get('fecha_inicio')
-        fin = datos.get('fecha_fin')
-        if inicio and fin and fin <= inicio:
-            raise forms.ValidationError("La fecha de fin debe ser posterior a la de inicio.")
-        if inicio and fin and fin > inicio + timedelta(days=7):
-            raise forms.ValidationError("La duración del taller no puede superar los 7 días desde la fecha de inicio.")
         return datos
