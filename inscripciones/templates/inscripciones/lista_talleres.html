@@ -41,6 +41,12 @@
                                     <a class="boton secundario" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a>
                                 {% endif %}
                             {% endif %}
+                            {# Editar: el operador cualquier taller, el coordinador solo los suyos #}
+                            {% if not taller.cancelado %}
+                                {% if user.rol == "OPERADOR" or user.rol == "COORDINADOR" and taller.coordinador_id == user.pk %}
+                                    <a class="boton secundario" href="{% url 'editar_taller' taller.pk %}">Editar</a>
+                                {% endif %}
+                            {% endif %}
                             {# El operador decide los talleres que pidió un coordinador #}
                             {% if user.rol == "OPERADOR" and taller.estado == "PENDIENTE" and not taller.cancelado %}
                                 <form method="post" action="{% url 'decidir_taller' taller.pk %}">

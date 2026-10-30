@@ -1,0 +1,50 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Editar {{ taller.nombre }}{% endblock %}
+
+{% block contenido %}
+<h1>Editar taller</h1>
+
+{# Datos que no se pueden cambiar, para saber qué taller se está editando #}
+<div class="caja">
+    <dl class="datos">
+        <dt>Código</dt>
+        <dd>{{ taller.codigo }}</dd>
+        <dt>Nombre</dt>
+        <dd>{{ taller.nombre }}</dd>
+        <dt>Estado</dt>
+        <dd>{{ taller.get_estado_display }}</dd>
+    </dl>
+</div>
+
+{% if user.rol == "COORDINADOR" %}
+    <div class="aviso espera">
+        Al guardar, el taller vuelve a quedar <strong>pendiente</strong> hasta que el operador lo apruebe otra vez.
+    </div>
+{% endif %}
+
+<div class="caja">
+    <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="aviso rechazo">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+
+        {# Cupo, inicio, fin y motivo (el motivo es obligatorio y queda en el historial) #}
+        {% for campo in form %}
+            <div class="campo">
+                <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+                {{ campo }}
+                {% if campo.help_text %}<p class="ayuda">{{ campo.help_text }}</p>{% endif %}
+                {% for error in campo.errors %}<p class="error-campo">{{ error }}</p>{% endfor %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="boton">Guardar cambios</button>
+        <a class="boton secundario" href="{% url 'lista_talleres' %}">Volver a talleres</a>
+    </form>
+</div>
+{% endblock %}
