@@ -260,6 +260,6 @@ Cómo viaja un pedido: **pantalla (HTML) → `urls.py` → vista (`views.py`) �
 
 - Requisitos, respuestas del cliente y cumplimiento del encargo: [docs/sesion-06-requisitos.md](docs/sesion-06-requisitos.md)
 - Historias, casos de uso, modelo, trazabilidad y diagramas de secuencia: [docs/sesion-07-modelos.md](docs/sesion-07-modelos.md)
-- - [Planilla de historias de usuario, casos de uso y cumplimiento (Excel)](https://docs.google.com/spreadsheets/d/1oyhV76VcpE20u-caiYUrRQok9BZoxhekKmNNaoeJrDQ/edit?usp=sharing)
+- [Planilla de historias de usuario, casos de uso y cumplimiento (Excel)](https://docs.google.com/spreadsheets/d/1oyhV76VcpE20u-caiYUrRQok9BZoxhekKmNNaoeJrDQ/edit?usp=sharing)
 - Primera iteración y backlog: [docs/sesion04.md](docs/sesion04.md)
 - Arquitectura: [docs/sesion-12-arquitectura.md](docs/sesion-12-arquitectura.md)
