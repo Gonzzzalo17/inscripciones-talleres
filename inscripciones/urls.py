@@ -21,4 +21,6 @@ urlpatterns = [
     path('operador/categorias-motivos/', views.gestionar_categorias_motivos, name='gestionar_categorias_motivos'),
     path('historial-cancelaciones/<int:participante_id>/levantar-bloqueo/', views.levantar_bloqueo, name='levantar_bloqueo'),
     path('talleres/<int:pk>/cancelar/', views.cancelar_taller, name='cancelar_taller'),
+    path('notificaciones/', views.notificaciones, name='notificaciones'),
+    path('talleres/por-categoria/', views.talleres_por_categoria, name='talleres_por_categoria'),
 ]

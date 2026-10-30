@@ -1,0 +1,32 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Notificaciones{% endblock %}
+
+{% block contenido %}
+<h1>Notificaciones</h1>
+
+{% if avisos %}
+    <div class="tabla-contenedor">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Taller</th>
+                    <th>Aviso</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aviso in avisos %}
+                    <tr>
+                        <td>{{ aviso.fecha|date:"d/m/Y H:i" }}</td>
+                        <td>{{ aviso.taller.nombre }}</td>
+                        <td>{% if not aviso.leida %}<strong>Nuevo:</strong> {% endif %}{{ aviso.mensaje }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <p class="vacio">No tienes notificaciones.</p>
+{% endif %}
+{% endblock %}

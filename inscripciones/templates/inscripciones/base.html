@@ -91,6 +91,8 @@
         <nav>
             {# HU-12: cada rol ve solo su menú #}
             <a href="{% url 'lista_talleres' %}">Talleres</a>
+            <a href="{% url 'talleres_por_categoria' %}">Por categoría</a>
+            <a href="{% url 'notificaciones' %}">Notificaciones</a>
             {% if user.rol == "COORDINADOR" or user.rol == "OPERADOR" %}
                 <a href="{% url 'crear_taller' %}">Crear taller</a>
             {% endif %}

@@ -6,7 +6,7 @@ from inscripciones.servicios.notificaciones import (contar_no_leidas, listar_not
 from inscripciones.servicios.operador import Operador
 from tests.test_operador import padron, solicitar, taller, usuario
 
-# Gantt 103: cada evento deja un aviso para la persona afectada.
+# Cada evento deja un aviso para la persona afectada.
 pytestmark = pytest.mark.django_db(databases=["default", "estudiantes_db"])
 
 
@@ -70,4 +70,15 @@ def test_ver_notificaciones_la_mas_nueva_primero_y_marcarlas_como_leidas():
     assert [aviso.taller for aviso in listar_notificaciones(usuario(1))] == [pintura, danza]
     assert contar_no_leidas(usuario(1)) == 2
     marcar_todas_como_leidas(usuario(1))
+    assert contar_no_leidas(usuario(1)) == 0
+
+def test_la_pantalla_de_notificaciones_muestra_los_avisos_y_los_marca_como_leidos(client):
+    t = taller(cupo=5)
+    solicitar(1, t)                      # deja un aviso de "quedaste inscrito"
+    client.force_login(usuario(1))
+
+    respuesta = client.get("/notificaciones/")
+
+    assert respuesta.status_code == 200
+    assert len(respuesta.context["avisos"]) == 1
     assert contar_no_leidas(usuario(1)) == 0

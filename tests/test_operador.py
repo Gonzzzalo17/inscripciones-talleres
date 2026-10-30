@@ -340,3 +340,56 @@ def test_operador_crea_taller_aprobado_sin_coordinador():
     assert taller_creado.estado == Taller.Estado.APROBADO
     assert taller_creado.coordinador is None
     assert taller_creado.categoria == categoria
+
+def test_no_se_inscribe_a_la_misma_hora_si_ya_esta_en_espera_de_otro_taller():
+    a = taller("CRU-A-01", cupo=4, empieza_en_horas=24)
+    b = taller("CRU-B-01", cupo=4, inicio=a.fecha_inicio)
+    for i in range(2, 6):                # A queda lleno
+        solicitar(i, a)
+    solicitar(1, a)                      # 1 queda en espera de A
+
+    with pytest.raises(ValidationError):
+        solicitar(1, b)                  # B es a la misma hora
+    assert not Inscripcion.objects.filter(participante=usuario(1), taller=b).exists()
+
+
+def test_rechazar_la_edicion_de_un_taller_con_inscritos_vuelve_a_sus_datos_y_avisa():
+    from inscripciones.models import MotivoEdicion
+    coordinadora = Usuario.objects.create(username="coordinadora", rol=Usuario.Rol.COORDINADOR)
+    t = taller("EDI-REC-01", cupo=4, empieza_en_horas=48)
+    Taller.objects.filter(pk=t.pk).update(coordinador=coordinadora)
+    t.refresh_from_db()
+    inicio_original = t.fecha_inicio
+    solicitar(1, t)
+    motivo = MotivoEdicion.objects.get_or_create(descripcion="Cambio de fecha u horario")[0]
+    Coordinador.editar_taller(t.pk, 6, t.fecha_inicio + timedelta(days=1), t.fecha_fin + timedelta(days=1),
+                              motivo, coordinadora)                          # queda PENDIENTE
+    avisos_antes = Notificacion.objects.filter(participante__in=[usuario(1), coordinadora]).count()
+
+    Operador.rechazar_taller(operador_del_sistema(), t)
+
+    t.refresh_from_db()
+    assert (t.estado, t.fecha_inicio, t.cupo_maximo) == (Taller.Estado.APROBADO, inicio_original, 4)
+    assert estado(1, t) == "CONFIRMADO"                                       # nadie pierde su plaza
+    assert Notificacion.objects.filter(participante__in=[usuario(1), coordinadora]).count() == avisos_antes + 2
+
+
+def test_no_se_puede_aprobar_un_taller_cancelado():
+    t = taller("CAN-APR-01", cupo=4)
+    Taller.objects.filter(pk=t.pk).update(estado=Taller.Estado.PENDIENTE, cancelado=True)
+
+    with pytest.raises(ValidationError):
+        Operador.aprobar_taller(operador_del_sistema(), t)
+    t.refresh_from_db()
+    assert t.estado == Taller.Estado.PENDIENTE
+
+
+def test_al_bloquearlo_no_toca_inscripciones_de_talleres_que_ya_empezaron():
+    pasado = taller("PAS-BLO-01", cupo=4, empieza_en_horas=-240)
+    Inscripcion.objects.create(participante=usuario(1), taller=pasado, estado="CONFIRMADO")
+    for n in range(4):                   # la cuarta cancelación en 72 h lo bloquea
+        t = taller(f"BLO-PAS-{n}", cupo=4, empieza_en_horas=24 + 3 * n)
+        solicitar(1, t)
+        Operador.cancelar_inscripcion(usuario(1), t)
+
+    assert estado(1, pasado) == "CONFIRMADO"

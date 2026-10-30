@@ -15,6 +15,9 @@ from .acceso import solo_para, TODOS
 from .servicios.sesion import Sesion
 from .servicios.participante import Participante
 from .servicios.permisos import puede_manejar_el_taller
+from .servicios.notificaciones import listar_notificaciones, marcar_todas_como_leidas
+
+
 
 @solo_para(*TODOS)
 def lista_talleres(request):
@@ -135,7 +138,6 @@ def historial_cancelaciones(request):
     Vista para consultar el historial de cancelaciones de un participante
     y verificar si se encuentra bloqueado (baneado) actualmente.
     """
-    # Puedes recibir el ID del participante por GET (ej: ?participante_id=5) o usar el usuario logueado
     participante_id = request.GET.get('participante_id')
 
     participantes = Usuario.objects.filter(rol=Usuario.Rol.PARTICIPANTE)
@@ -423,3 +425,25 @@ def cancelar_taller(request, pk):
         messages.error(request, e.messages[0])
 
     return redirect('lista_talleres')
+
+@solo_para(*TODOS)
+def notificaciones(request):
+    # Cada usuario ve sus avisos, el más nuevo primero. Al abrir la pantalla quedan como leídos.
+    avisos = list(listar_notificaciones(request.user))     # se leen ANTES de marcarlos, para resaltar los nuevos
+    marcar_todas_como_leidas(request.user)
+    return render(request, 'inscripciones/notificaciones.html', {'avisos': avisos})
+
+
+@solo_para(*TODOS)
+def talleres_por_categoria(request):
+    # El participante elige una categoría (o "Todas") y ve los talleres a los que todavía se puede inscribir.
+    categorias = Categoria.objects.order_by('nombre')
+    categoria_elegida = request.GET.get('categoria', '')
+    categoria = categorias.filter(pk=categoria_elegida).first() if categoria_elegida.isdigit() else None
+    contexto = {
+        'categorias': categorias,
+        'categoria_elegida': categoria_elegida,
+        'talleres': Participante.buscar_talleres_por_categoria(categoria),
+    }
+    return render(request, 'inscripciones/talleres_por_categoria.html', contexto)
+

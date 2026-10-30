@@ -32,28 +32,6 @@ class Participante:
 
     @staticmethod
     def registrar_cuenta(codigo, contrasena):
-        # crea la cuenta del estudiante con su código universitario.
-        # El nombre completo se toma de la base de la universidad.
-        estudiante = (EstudianteEstatico.objects.using(ALIAS_PADRON)
-                      .only("codigo", "nombre", "apellido")
-                      .filter(codigo=codigo).first())
-        if estudiante is None:
-            raise ValidationError(f"El código {codigo} no figura en la lista de estudiantes de la universidad.")
-
-        if Usuario.objects.filter(Q(codigo=codigo) | Q(username=codigo)).exists():
-            raise ValidationError(f"El código {codigo} ya tiene una cuenta. Ingresa con tu contraseña.")
-
-        nuevo = Usuario(username=codigo, codigo=codigo, rol=Usuario.Rol.PARTICIPANTE,
-                        first_name=estudiante.nombre, last_name=estudiante.apellido)
-        # Reglas de Django: mínimo 8 caracteres, no muy común, no solo números
-        # y que no se parezca al código ni al nombre.
-        validate_password(contrasena, user=nuevo)
-        nuevo.set_password(contrasena)  # se guarda cifrada, nunca en texto plano
-        nuevo.save()
-        return nuevo
-
-    @staticmethod
-    def registrar_cuenta(codigo, contrasena):
         codigo = (codigo or "").strip()
 
         if not codigo:

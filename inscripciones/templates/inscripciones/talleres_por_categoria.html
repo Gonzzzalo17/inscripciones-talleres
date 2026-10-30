@@ -1,0 +1,62 @@
+{% extends "inscripciones/base.html" %}
+
+{% block titulo %}Talleres por categoría{% endblock %}
+
+{% block contenido %}
+<h1>Talleres por categoría</h1>
+
+<div class="caja">
+    {# GET: la categoría elegida viaja en la URL (?categoria=...) #}
+    <form method="get">
+        <div class="campo">
+            <label for="categoria">Categoría</label>
+            <select id="categoria" name="categoria">
+                <option value="">Todas</option>
+                {% for categoria in categorias %}
+                    {% if categoria_elegida == categoria.pk|stringformat:"s" %}
+                        <option value="{{ categoria.pk }}" selected>{{ categoria.nombre }}</option>
+                    {% else %}
+                        <option value="{{ categoria.pk }}">{{ categoria.nombre }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="boton">Ver talleres</button>
+    </form>
+</div>
+
+{% if talleres %}
+    <div class="tabla-contenedor">
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for taller in talleres %}
+                    <tr>
+                        <td>{{ taller.codigo }}</td>
+                        <td>{{ taller.nombre }}</td>
+                        <td>{{ taller.categoria.nombre|default:"—" }}</td>
+                        <td>{{ taller.fecha_inicio|date:"d/m/Y H:i" }}</td>
+                        <td>{{ taller.fecha_fin|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if user.rol == "PARTICIPANTE" or user.rol == "OPERADOR" %}
+                                <a class="boton secundario" href="{% url 'solicitar_inscripcion' taller.pk %}">Solicitar inscripción</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <p class="vacio">No hay talleres disponibles en esta categoría.</p>
+{% endif %}
+{% endblock %}
